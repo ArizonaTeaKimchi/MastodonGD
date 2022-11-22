@@ -210,7 +210,7 @@ func _get_timeline(timeline_version: String) -> MastodonTimeline:
 	timeline.from_json(instance_dict)
 	return timeline
 
-func post_status(status_text: String, media_path: String, media_description: String, visibility: String = 'public'):
+func post_status(status_text: String, media_path: String, media_description: String, visibility: String = 'public', sensitive: bool = false, sensitive_text: String=''):
 	var status_path = '/api/v1/statuses'
 
 	var media_id = null
@@ -224,7 +224,11 @@ func post_status(status_text: String, media_path: String, media_description: Str
 
 	if media_id != null and not media_path.is_empty():
 		data['media_ids[]'] = [media_id]
-
+	
+	if sensitive:
+		data['sensitive'] = sensitive
+		data['spoiler_text'] = sensitive_text if not sensitive_text.is_empty() else 'The user has marked this content as sensitive'
+	
 	var response = await self._request(status_path, HTTPClient.METHOD_POST, PackedStringArray(["Authorization: Bearer %s" % self.token.access_token]), data)
 
 func view_status(status_id: String) -> MastodonStatus:	
