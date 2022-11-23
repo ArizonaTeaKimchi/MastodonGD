@@ -26,15 +26,15 @@ func get_application(instance: String, application_name: String) -> AppState:
 
 	var app_info: AppState
 
-	if _app_exists(instance):
-		app_info = self._load_app(instance)
+	if _app_exists(instance, application_name):
+		app_info = self._load_app(instance, application_name)
 		print("Found existing app for instance: %s" % instance)
 	else:
 		app_info = await self._create_app(instance, application_name)
 
 	return app_info
 
-func _app_exists(instance: String) -> bool:
+func _app_exists(instance: String, app_name: String) -> bool:
 	var dir = DirAccess.open(app_save_path)
 	if not dir.dir_exists(self.instances_path):
 		dir.make_dir(self.instances_path)
@@ -42,10 +42,17 @@ func _app_exists(instance: String) -> bool:
 
 	dir.change_dir(self.instances_path)
 
-	return dir.file_exists("%s.tres" % instance)
+	return dir.file_exists("%s.json" % instance)
 
-func _load_app(instance: String) -> AppState:
-	return ResourceLoader.load(self.instances_path + instance + ".tres") as AppState
+func _load_app(instance: String, app_name: String) -> AppState:
+	var file = FileAccess.open_encrypted_with_pass(self.instances_path + instance + '.json', FileAccess.READ, app_name)
+#	file.store_string(JSON.stringify(result))
+	var data = JSON.parse_string(file.get_as_text())
+	var app: AppState = AppState.new()
+	app.from_json(data)
+	
+	return app
+#	return ResourceLoader.load(self.instances_path + instance + ".tres") as AppState
 
 func _create_app(
 	instance: String, 
@@ -84,8 +91,11 @@ func _save_app(result: Dictionary, instance: String) -> AppState:
 	app.redirect_uri = result.get('redirect_uri', null)
 	app.client_id = result.get('client_id', null)
 	app.client_secret = result.get('client_secret', null)
+	
+	var file = FileAccess.open_encrypted_with_pass(self.instances_path + instance + '.json', FileAccess.WRITE, app.name)
+	file.store_string(JSON.stringify(result))
 
-	ResourceSaver.save(app, self.instances_path + instance + ".tres")
+#	ResourceSaver.save(app, self.instances_path + instance + ".tres")
 
 	return app
 
@@ -102,7 +112,7 @@ func authorize_user(instance: String, app_state: AppState, login_prompt: Signal)
 	var token = null
 	var access_token = null
 	if _token_exists(instance):
-		token = _load_token(instance)
+		token = _load_token(instance, app_state.name)
 		print('Loaded saved token for instance \"%s\"' % instance)
 
 #		self._verify_token()
@@ -127,7 +137,7 @@ func authorize_user(instance: String, app_state: AppState, login_prompt: Signal)
 		var token_verified = await _verify_token(instance, new_token.access_token)
 		if token_verified:
 			if not loaded:
-				self._save_token(instance, new_token)
+				self._save_token(instance, new_token, app_state.name)
 			return new_token
 
 func _token_exists(instance: String):
@@ -138,11 +148,17 @@ func _token_exists(instance: String):
 	
 	dir.change_dir(self.token_path)
 	
-	return dir.file_exists("%s_token.tres" % instance)
+	return dir.file_exists("%s_token.json" % instance)
 
-func _load_token(instance: String) -> TokenEntity:
+func _load_token(instance: String, app_name: String) -> TokenEntity:
 #	var dir = DirAccess.open(self.token_path)
-	return ResourceLoader.load(token_path+"%s_token.tres" % instance) as TokenEntity
+	var file = FileAccess.open_encrypted_with_pass(token_path+"%s_token.json" % instance, FileAccess.READ, app_name)
+#	file.store_string(JSON.stringify(result))
+	var data = JSON.parse_string(file.get_as_text())
+	var token: TokenEntity = TokenEntity.new()
+	token.from_json(data)
+	return token
+#	return ResourceLoader.load(token_path+"%s_token.tres" % instance) as TokenEntity
 
 func _get_token(token: String, instance: String, app_state: AppState) -> TokenEntity:
 	var oath_url = 'https://{0}/oauth/token'.format([instance])
@@ -188,8 +204,14 @@ func _verify_token(instance: String, token: String) -> bool:
 func _on_verification_attempted(result, response_code, headers, body) -> bool:
 	return response_code == 200
 
-func _save_token(instance: String, token: TokenEntity):
-	ResourceSaver.save(token, self.token_path + instance + "_token.tres")
+func _save_token(instance: String, token: TokenEntity, app_name: String):
+#	ResourceSaver.save(token, self.token_path + instance + "_token.tres")
+	
+	
+	var data = token.to_json()
+	
+	var file = FileAccess.open_encrypted_with_pass(self.token_path + instance + "_token.json", FileAccess.WRITE, app_name)
+	file.store_string(JSON.stringify(data))
 	print('Token saved for instance \"%s\"' % instance)
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.

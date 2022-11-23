@@ -24,7 +24,7 @@ var content: String
 var reblog: MastodonStatus
 var application
 var account: MastodonAccount
-var media_attachments: Array
+var media_attachments: Array[MastodonMediaAttachment]
 var mentions: Array
 var tags: Array
 var emojis: Array
@@ -52,7 +52,7 @@ func from_json(json: Dictionary):
 	self.content = json.get('content')
 	
 	self.application = json.get('application')
-	self.media_attachments = json.get('media_attachments')
+
 	self.mentions = json.get('mentions')
 	self.tags = json.get('tags')
 	self.emojis = json.get('emojis')
@@ -75,3 +75,10 @@ func from_json(json: Dictionary):
 	else:
 		self.reblog = null
 	
+	var attachments = json.get('media_attachments')
+	
+	self.media_attachments = []
+	for attachment in attachments:
+		var a = MastodonMediaAttachment.new()
+		a.from_json(attachment)
+		self.media_attachments.append(a)

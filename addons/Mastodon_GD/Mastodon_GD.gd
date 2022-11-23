@@ -29,7 +29,7 @@ func Init_Client(instance: String, app_name: String, login_prompt: Node = null):
 
 	if self.app:
 		if login_prompt == null:
-			login_prompt = load("res://Login_Prompt.tscn").instantiate()
+			login_prompt = load("res://addons/Mastodon_GD/LoginPrompt/Login_Prompt.tscn").instantiate()
 			self.add_child(login_prompt)
 
 		self.token = await self.auth_client.authorize_user(instance, self.app, login_prompt.token_submitted)
