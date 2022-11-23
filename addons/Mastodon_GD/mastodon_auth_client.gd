@@ -14,7 +14,7 @@ func _ready():
 ##################################################
 ########### APPLICATION REGISTRATION #############
 
-func get_application(instance: String, application_name: String, password: String, save_credentials: bool = false) -> AppState:
+func get_application(instance: String, application_name: String, password: String, save_credentials: bool = false) -> MastodonAppState:
 	var mastodon_dir = DirAccess.open("user://")
 
 	if not mastodon_dir.dir_exists(self.app_save_path):
@@ -24,7 +24,7 @@ func get_application(instance: String, application_name: String, password: Strin
 	if not dir.dir_exists(self.instances_path):
 		dir.make_dir(self.instances_path)
 
-	var app_info: AppState
+	var app_info: MastodonAppState
 
 	if _app_exists(instance, application_name) and save_credentials:
 		app_info = self._load_app(instance, password)
@@ -45,22 +45,22 @@ func _app_exists(instance: String, app_name: String) -> bool:
 
 	return dir.file_exists("%s.json" % instance)
 
-func _load_app(instance: String, password: String) -> AppState:
+func _load_app(instance: String, password: String) -> MastodonAppState:
 	var file = FileAccess.open_encrypted_with_pass(self.instances_path + instance + '.json', FileAccess.READ, password)
 #	file.store_string(JSON.stringify(result))
 	var data = JSON.parse_string(file.get_as_text())
-	var app: AppState = AppState.new()
+	var app: MastodonAppState = MastodonAppState.new()
 	app.from_json(data)
 	
 	return app
-#	return ResourceLoader.load(self.instances_path + instance + ".tres") as AppState
+#	return ResourceLoader.load(self.instances_path + instance + ".tres") as MastodonAppState
 
 func _create_app(
 	instance: String, 
 	app_name: String, 
 	redirect_uri: String='urn:ietf:wg:oauth:2.0:oob', 
 	scope: String='read:accounts'
-	) -> AppState:
+	) -> MastodonAppState:
 
 	var query_string = HTTPClient.new().query_string_from_dict({
 		'client_name':  app_name,
@@ -77,7 +77,7 @@ func _create_app(
 
 	var result = await callv("_handle_registration_response", response)
 
-	var app = AppState.new()
+	var app = MastodonAppState.new()
 	app.name = result.get('name', null)
 	app.id = result.get('id', null)
 	app.redirect_uri = result.get('redirect_uri', null)
@@ -93,18 +93,18 @@ func _handle_registration_response(result, response_code, headers, body, instanc
 		push_error('HTTP %s ERROR: Failed to register app with Mastodon instance "%s": %s' % [response_code, instance, body.get_string_from_utf8()])
 		return null
 
-func _save_app(app: AppState, instance: String, password: String):
+func _save_app(app: MastodonAppState, instance: String, password: String):
 	var file = FileAccess.open_encrypted_with_pass(self.instances_path + instance + '.json', FileAccess.WRITE, password)
 	file.store_string(JSON.stringify(app.to_json()))
 
 ##################################################
 ############# USER AUTHORIZATION #################
 
-func authorize_user(instance: String, app_state: AppState, login_prompt: Signal, password: String, save_credentials: bool = false):
+func authorize_user(instance: String, app_state: MastodonAppState, login_prompt: Signal, password: String, save_credentials: bool = false):
 	# Authorizes the user using OAuth
 	# Params:
 	# instance (String): Name of Mastodon Instance
-	# app_state (AppState): AppState retrieved from get_application()
+	# app_state (MastodonAppState): MastodonAppState retrieved from get_application()
 	# login_prompt (Signal): A user defined signal that is expected to emit the token string used to login. Emit null value to cancel login
 	var loaded = false
 	var token = null
@@ -148,17 +148,17 @@ func _token_exists(instance: String):
 	
 	return dir.file_exists("%s_token.json" % instance)
 
-func _load_token(instance: String, password: String) -> TokenEntity:
+func _load_token(instance: String, password: String) -> MastodonToken:
 #	var dir = DirAccess.open(self.token_path)
 	var file = FileAccess.open_encrypted_with_pass(token_path+"%s_token.json" % instance, FileAccess.READ, password)
 #	file.store_string(JSON.stringify(result))
 	var data = JSON.parse_string(file.get_as_text())
-	var token: TokenEntity = TokenEntity.new()
+	var token: MastodonToken = MastodonToken.new()
 	token.from_json(data)
 	return token
-#	return ResourceLoader.load(token_path+"%s_token.tres" % instance) as TokenEntity
+#	return ResourceLoader.load(token_path+"%s_token.tres" % instance) as MastodonToken
 
-func _get_token(token: String, instance: String, app_state: AppState) -> TokenEntity:
+func _get_token(token: String, instance: String, app_state: MastodonAppState) -> MastodonToken:
 	var oath_url = 'https://{0}/oauth/token'.format([instance])
 	
 	var query_string = HTTPClient.new().query_string_from_dict({
@@ -176,13 +176,13 @@ func _get_token(token: String, instance: String, app_state: AppState) -> TokenEn
 	
 	return callv("_attempt_login", response)
 
-func _attempt_login(result, response_code, headers, body) ->TokenEntity:
+func _attempt_login(result, response_code, headers, body) ->MastodonToken:
 	print(response_code)
 	
 	if response_code == 200:
 		var json = JSON.parse_string(body.get_string_from_utf8())
 		
-		var new_token: TokenEntity = TokenEntity.new()
+		var new_token: MastodonToken = MastodonToken.new()
 		new_token.access_token = json.get("access_token")
 		new_token.token_type = json.get("token_type")
 #		new_token.scope = json.get("scope")
@@ -202,7 +202,7 @@ func _verify_token(instance: String, token: String) -> bool:
 func _on_verification_attempted(result, response_code, headers, body) -> bool:
 	return response_code == 200
 
-func _save_token(token: TokenEntity, instance: String, password: String):
+func _save_token(token: MastodonToken, instance: String, password: String):
 	var file = FileAccess.open_encrypted_with_pass(self.token_path + instance + "_token.json", FileAccess.WRITE, password)
 	file.store_string(JSON.stringify(token.to_json()))
 	print('Token saved for instance \"%s\"' % instance)

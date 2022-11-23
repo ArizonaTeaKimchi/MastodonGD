@@ -4,8 +4,8 @@ class_name MastodonClient
 
 var instance_name: String
 var app_name: String
-var app: AppState
-var token: TokenEntity
+var app: MastodonAppState
+var token: MastodonToken
 var auth_client: MastodonAuthClient
 var current_instance: MastodonInstance
 var current_user: MastodonAccount
