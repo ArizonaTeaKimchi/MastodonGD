@@ -21,7 +21,7 @@ func _ready():
     var application_name: String = 'MastodonGD Test App'
 
     # This value will be used to encrypt and decrypt client-side application and token data
-	# leave blank if you don't want app and token data to be stored
+    # leave blank if you don't want app and token data to be stored
     # (This will require the user to log back to their account every time they open your app).
     var client_side_encryption_key: String = 'Secret decryption/encyption key' 
 
