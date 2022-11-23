@@ -14,7 +14,7 @@ func _ready():
 ##################################################
 ########### APPLICATION REGISTRATION #############
 
-func get_application(instance: String, application_name: String) -> AppState:
+func get_application(instance: String, application_name: String, password: String, save_credentials: bool = false) -> AppState:
 	var mastodon_dir = DirAccess.open("user://")
 
 	if not mastodon_dir.dir_exists(self.app_save_path):
@@ -26,12 +26,13 @@ func get_application(instance: String, application_name: String) -> AppState:
 
 	var app_info: AppState
 
-	if _app_exists(instance, application_name):
-		app_info = self._load_app(instance, application_name)
+	if _app_exists(instance, application_name) and save_credentials:
+		app_info = self._load_app(instance, password)
 		print("Found existing app for instance: %s" % instance)
 	else:
 		app_info = await self._create_app(instance, application_name)
-
+		if save_credentials:
+			self._save_app(app_info, instance, password)
 	return app_info
 
 func _app_exists(instance: String, app_name: String) -> bool:
@@ -44,8 +45,8 @@ func _app_exists(instance: String, app_name: String) -> bool:
 
 	return dir.file_exists("%s.json" % instance)
 
-func _load_app(instance: String, app_name: String) -> AppState:
-	var file = FileAccess.open_encrypted_with_pass(self.instances_path + instance + '.json', FileAccess.READ, app_name)
+func _load_app(instance: String, password: String) -> AppState:
+	var file = FileAccess.open_encrypted_with_pass(self.instances_path + instance + '.json', FileAccess.READ, password)
 #	file.store_string(JSON.stringify(result))
 	var data = JSON.parse_string(file.get_as_text())
 	var app: AppState = AppState.new()
@@ -74,17 +75,8 @@ func _create_app(
 	
 	response.append(instance)
 
-	return callv("_handle_registration_response", response)
+	var result = await callv("_handle_registration_response", response)
 
-func _handle_registration_response(result, response_code, headers, body, instance) -> AppState:
-	if response_code == 200:
-		var json = JSON.parse_string(body.get_string_from_utf8())
-		return self._save_app(json, instance)
-	else:
-		push_error('HTTP %s ERROR: Failed to register app with Mastodon instance "%s": %s' % [response_code, instance, body.get_string_from_utf8()])
-		return null
-
-func _save_app(result: Dictionary, instance: String) -> AppState:
 	var app = AppState.new()
 	app.name = result.get('name', null)
 	app.id = result.get('id', null)
@@ -92,17 +84,23 @@ func _save_app(result: Dictionary, instance: String) -> AppState:
 	app.client_id = result.get('client_id', null)
 	app.client_secret = result.get('client_secret', null)
 	
-	var file = FileAccess.open_encrypted_with_pass(self.instances_path + instance + '.json', FileAccess.WRITE, app.name)
-	file.store_string(JSON.stringify(result))
-
-#	ResourceSaver.save(app, self.instances_path + instance + ".tres")
-
 	return app
+
+func _handle_registration_response(result, response_code, headers, body, instance):
+	if response_code == 200:
+		return JSON.parse_string(body.get_string_from_utf8())
+	else:
+		push_error('HTTP %s ERROR: Failed to register app with Mastodon instance "%s": %s' % [response_code, instance, body.get_string_from_utf8()])
+		return null
+
+func _save_app(app: AppState, instance: String, password: String):
+	var file = FileAccess.open_encrypted_with_pass(self.instances_path + instance + '.json', FileAccess.WRITE, password)
+	file.store_string(JSON.stringify(app.to_json()))
 
 ##################################################
 ############# USER AUTHORIZATION #################
 
-func authorize_user(instance: String, app_state: AppState, login_prompt: Signal):
+func authorize_user(instance: String, app_state: AppState, login_prompt: Signal, password: String, save_credentials: bool = false):
 	# Authorizes the user using OAuth
 	# Params:
 	# instance (String): Name of Mastodon Instance
@@ -111,8 +109,8 @@ func authorize_user(instance: String, app_state: AppState, login_prompt: Signal)
 	var loaded = false
 	var token = null
 	var access_token = null
-	if _token_exists(instance):
-		token = _load_token(instance, app_state.name)
+	if _token_exists(instance) and save_credentials:
+		token = _load_token(instance, password)
 		print('Loaded saved token for instance \"%s\"' % instance)
 
 #		self._verify_token()
@@ -136,8 +134,8 @@ func authorize_user(instance: String, app_state: AppState, login_prompt: Signal)
 	if new_token.access_token != null:
 		var token_verified = await _verify_token(instance, new_token.access_token)
 		if token_verified:
-			if not loaded:
-				self._save_token(instance, new_token, app_state.name)
+			if not loaded and save_credentials:
+				self._save_token(new_token, instance, password)
 			return new_token
 
 func _token_exists(instance: String):
@@ -150,9 +148,9 @@ func _token_exists(instance: String):
 	
 	return dir.file_exists("%s_token.json" % instance)
 
-func _load_token(instance: String, app_name: String) -> TokenEntity:
+func _load_token(instance: String, password: String) -> TokenEntity:
 #	var dir = DirAccess.open(self.token_path)
-	var file = FileAccess.open_encrypted_with_pass(token_path+"%s_token.json" % instance, FileAccess.READ, app_name)
+	var file = FileAccess.open_encrypted_with_pass(token_path+"%s_token.json" % instance, FileAccess.READ, password)
 #	file.store_string(JSON.stringify(result))
 	var data = JSON.parse_string(file.get_as_text())
 	var token: TokenEntity = TokenEntity.new()
@@ -204,14 +202,9 @@ func _verify_token(instance: String, token: String) -> bool:
 func _on_verification_attempted(result, response_code, headers, body) -> bool:
 	return response_code == 200
 
-func _save_token(instance: String, token: TokenEntity, app_name: String):
-#	ResourceSaver.save(token, self.token_path + instance + "_token.tres")
-	
-	
-	var data = token.to_json()
-	
-	var file = FileAccess.open_encrypted_with_pass(self.token_path + instance + "_token.json", FileAccess.WRITE, app_name)
-	file.store_string(JSON.stringify(data))
+func _save_token(token: TokenEntity, instance: String, password: String):
+	var file = FileAccess.open_encrypted_with_pass(self.token_path + instance + "_token.json", FileAccess.WRITE, password)
+	file.store_string(JSON.stringify(token.to_json()))
 	print('Token saved for instance \"%s\"' % instance)
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.

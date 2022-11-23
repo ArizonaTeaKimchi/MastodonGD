@@ -19,20 +19,23 @@ var pngs: String = 'png'
 var mp4: String = 'mp4'
 var webm: String = 'webm'
 
-func Init_Client(instance: String, app_name: String, login_prompt: Node = null):
+func Init_Client(instance: String, app_name: String, password: String = '', login_prompt: Node = null):
 	self.instance_name = instance
 	self.app_name = app_name
+	
+	var save_credentials = not password.is_empty()
+
 	self.auth_client = MastodonAuthClient.new()
 	self.add_child(self.auth_client)
-
-	self.app = await self.auth_client.get_application(instance, app_name)
+	
+	self.app = await self.auth_client.get_application(instance, app_name, password, save_credentials)
 
 	if self.app:
 		if login_prompt == null:
 			login_prompt = load("res://addons/Mastodon_GD/LoginPrompt/Login_Prompt.tscn").instantiate()
 			self.add_child(login_prompt)
 
-		self.token = await self.auth_client.authorize_user(instance, self.app, login_prompt.token_submitted)
+		self.token = await self.auth_client.authorize_user(instance, self.app, login_prompt.token_submitted, password, save_credentials)
 
 	self.remove_child(login_prompt)
 	self.current_instance = await self.get_instance()

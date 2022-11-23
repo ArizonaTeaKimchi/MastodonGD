@@ -17,14 +17,17 @@ Initializing a verified mastodon client requires only a few lines of code.
 var mastodon_client: MastodonClient
 
 func _ready():
-    var instance_name = 'mastodon.gamedev.place'
-    var application_name = 'MastodonGD Test App'
-	
+    var instance_name: String = 'mastodon.gamedev.place'
+    var application_name: String = 'MastodonGD Test App'
+
+    # This value will be used to encrypt and decrypt client-side application and token data
+	# leave blank if you don't want app and token data to be stored
+    # (This will require the user to log back to their account every time they open your app).
+    var client_side_encryption_key: String = 'Secret decryption/encyption key' 
+
     self.mastodon_client: MastodonClient = MastodonClient.new()
 	self.add_child(self.mastodon_client)
-
-	await self.mastodon_client.Init_Client(instance_name, application_name)
-	
+	await self.mastodon_client.Init_Client(instance_name, application_name, client_side_encryption_key)
 ```
 
 The `MastodonClient` class currently supports a handful of Mastodon api operations such as
