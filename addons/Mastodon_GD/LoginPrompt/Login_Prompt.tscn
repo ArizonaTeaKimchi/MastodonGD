@@ -1,7 +1,7 @@
-[gd_scene load_steps=7 format=3 uid="uid://d2am8cjb3gm2s"]
+[gd_scene load_steps=7 format=3 uid="uid://fj2kwg43ndfh"]
 
 [ext_resource type="Script" path="res://addons/Mastodon_GD/LoginPrompt/LoginPrompt.gd" id="1_vr642"]
-[ext_resource type="Texture2D" uid="uid://b4fjcal4u1p8g" path="res://Assets/Mastodon_Mascot.png" id="2_8rggk"]
+[ext_resource type="Texture2D" uid="uid://b4fjcal4u1p8g" path="res://addons/Mastodon_GD/LoginPrompt/Mastodon_Mascot.png" id="2_s445x"]
 [ext_resource type="Script" path="res://addons/Mastodon_GD/LoginPrompt/SecretField.gd" id="3_h50gu"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_m1qfk"]
@@ -38,30 +38,48 @@ offset_bottom = 453.0
 theme = SubResource("Theme_nspoe")
 
 [node name="TextureRect" type="TextureRect" parent="Panel"]
-layout_mode = 0
-offset_left = 133.0
-offset_top = 28.0
-offset_right = 317.0
-offset_bottom = 217.0
-texture = ExtResource("2_8rggk")
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -92.0
+offset_top = 21.0
+offset_right = 92.0
+offset_bottom = 209.0
+grow_horizontal = 2
+texture = ExtResource("2_s445x")
 ignore_texture_size = true
 
 [node name="Label" type="Label" parent="Panel"]
-layout_mode = 0
-offset_left = 39.0
-offset_top = 230.0
-offset_right = 430.0
-offset_bottom = 378.0
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -195.5
+offset_top = -230.0
+offset_right = 195.5
+offset_bottom = -82.0
+grow_horizontal = 2
+grow_vertical = 0
 theme = SubResource("Theme_o2fsg")
 text = "A browser should open shortly, copy and paste the access token below to authorize Trunks for Read Access to your account!"
 autowrap_mode = 3
 
 [node name="TokenField" type="TextEdit" parent="Panel"]
-layout_mode = 0
-offset_left = 67.0
-offset_top = 390.0
-offset_right = 371.0
-offset_bottom = 434.0
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -152.0
+offset_top = -71.0
+offset_right = 152.0
+offset_bottom = -27.0
+grow_horizontal = 2
+grow_vertical = 0
 caret_multiple = false
 script = ExtResource("3_h50gu")
 
