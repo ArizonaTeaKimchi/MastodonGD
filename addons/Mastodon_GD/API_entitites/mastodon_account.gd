@@ -44,3 +44,5 @@ func from_json(json: Dictionary):
 
 	self.emojis = json.get("emojis")
 	self.fields = json.get("fields")
+	
+	return self

@@ -43,30 +43,21 @@ func Init_Client(instance: String, app_name: String, password: String = '', logi
 
 func get_instance() -> MastodonInstance:
 	var instance_dict = await self._request('/api/v1/instance', HTTPClient.METHOD_GET)
-	var instance_data = MastodonInstance.new()
-	instance_data.from_json(instance_dict)
-	return instance_data
+	return MastodonInstance.new().from_json(instance_dict)
 
 func get_user_account():
 	var path = '/api/v1/accounts/verify_credentials'
 	var response = await self._request(path, HTTPClient.METHOD_GET, PackedStringArray(["Authorization: Bearer %s" % self.token.access_token]))
 	
-	var user_account = MastodonAccount.new()
-	user_account.from_json(response)
-	
-	return user_account
+	return MastodonAccount.new().from_json(response)
+
 
 func get_account(account_id: String) -> MastodonAccount:
 	var account_path = "/api/v1/accounts/" + account_id
-
-	var headers = []
-#	if self.current_instance.approval_required or require_auth:
-	headers = PackedStringArray(["Authorization: Bearer %s" % self.token.access_token])
+	var headers = PackedStringArray(["Authorization: Bearer %s" % self.token.access_token])
 
 	var result = await self._request(account_path, HTTPClient.METHOD_GET, headers)
-	var acct = MastodonAccount.new()
-	acct.from_json(result)
-	return acct
+	return MastodonAccount.new().from_json(result)
 
 func verify_account_credentials():
 	var path = '/api/v1/accounts/verify_credentials'
@@ -112,10 +103,8 @@ func get_account_statuses(account_id: String) -> MastodonTimeline:
 	
 	var account_statuses_dict = await self._get_account(account_id, endpoint)
 	
-	var timeline = MastodonTimeline.new()
-	timeline.from_json(account_statuses_dict)
-	
-	return timeline
+	return MastodonTimeline.new().from_json(account_statuses_dict)
+
 
 func get_account_followers(account_id: String) -> Array[MastodonAccount]:
 	var endpoint = '/followers'
@@ -124,9 +113,7 @@ func get_account_followers(account_id: String) -> Array[MastodonAccount]:
 	var accounts_dict = await self._get_account(account_id, endpoint)
 
 	for account in accounts_dict:
-		var acc = MastodonAccount.new()
-		acc.from_json(account)
-		response.append(acc)
+		response.append(MastodonAccount.new().from_json(account))
 	
 	return response
 
@@ -137,9 +124,7 @@ func get_account_following(account_id: String) -> Array[MastodonAccount]:
 	var accounts_dict = await self._get_account(account_id, endpoint)
 
 	for account in accounts_dict:
-		var acc = MastodonAccount.new()
-		acc.from_json(account)
-		response.append(acc)
+		response.append(MastodonAccount.new().from_json(account))
 	
 	return response
 
@@ -205,13 +190,24 @@ func _get_timeline(timeline_version: String) -> MastodonTimeline:
 	var timelines_base = '/api/v1/timelines/' + timeline_version
 	
 	var headers = []
-#	if self.current_instance.approval_required:
 	headers = PackedStringArray(["Authorization: Bearer %s" % self.token.access_token])
 
 	var instance_dict = await self._request(timelines_base, HTTPClient.METHOD_GET, headers)
 	var timeline = MastodonTimeline.new()
-	timeline.from_json(instance_dict)
-	return timeline
+	return timeline.from_json(instance_dict)
+
+func get_notifications(types = [], exclude = []) -> Array[MastodonNotification]:
+	var endpoint = '/api/v1/notifications'
+	var headers = PackedStringArray(["Authorization: Bearer %s" % self.token.access_token])
+
+	var response = await self._request(endpoint, HTTPClient.METHOD_GET, headers)
+	var notifcations: Array[MastodonNotification] = []
+	
+	for n in response:
+		var notification = MastodonNotification.new().from_json(n)
+		notifcations.append(notification)
+	
+	return notifcations
 
 func post_status(status_text: String, media_path: String, media_description: String, visibility: String = 'public', sensitive: bool = false, sensitive_text: String=''):
 	var status_path = '/api/v1/statuses'
@@ -237,10 +233,7 @@ func post_status(status_text: String, media_path: String, media_description: Str
 func view_status(status_id: String) -> MastodonStatus:	
 	var status_dict = await self._status('', status_id, HTTPClient.METHOD_GET)
 	
-	var status = MastodonStatus.new()
-	status.from_json(status_dict)
-
-	return status
+	return MastodonStatus.new().from_json(status_dict)
 
 func delete_status(status_id: String):
 	self._status('', status_id, HTTPClient.METHOD_DELETE)
@@ -254,14 +247,10 @@ func get_parent_and_child_statuses(status_id: String):
 	var descendants: Array[MastodonStatus] = []
 
 	for status in context_dict['ancestors']:
-		var new_status = MastodonStatus.new()
-		new_status.from_json(status)
-		ancestors.append(new_status)
+		ancestors.append(MastodonStatus.new().from_json(status))
 
 	for status in context_dict['descendants']:
-		var new_status = MastodonStatus.new()
-		new_status.from_json(status)
-		descendants.append(new_status)
+		descendants.append(MastodonStatus.new().from_json(status))
 	
 	return {'ancestors': ancestors, 'descendants': descendants}
 
@@ -307,9 +296,7 @@ func _get_accounts_by_status_action(endpoint: String, status_id: String):
 	var users_dict = await self._status(endpoint, status_id)
 
 	for user in users_dict:
-		var acc = MastodonAccount.new()
-		acc.from_json(user)
-		users.append(acc)
+		users.append(MastodonAccount.new().from_json(user))
 
 	return users
 
@@ -418,7 +405,6 @@ func _on_media_upload(result, response_code, headers, body):
 	if response_code == 200:
 		var json = JSON.new()
 		var body_string = body.get_string_from_utf8()
-#		print(body_string)
 		var error = json.parse(body_string)
 		if error == OK:
 			return json.data

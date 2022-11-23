@@ -22,3 +22,5 @@ func from_json(json: Dictionary):
 	self.meta = json.get('meta')
 	self.description = json.get('description')
 	self.blurhash = json.get('blurhash')
+	
+	return self

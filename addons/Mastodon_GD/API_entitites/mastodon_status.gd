@@ -79,6 +79,6 @@ func from_json(json: Dictionary):
 	
 	self.media_attachments = []
 	for attachment in attachments:
-		var a = MastodonMediaAttachment.new()
-		a.from_json(attachment)
-		self.media_attachments.append(a)
+		self.media_attachments.append(MastodonMediaAttachment.new().from_json(attachment))
+
+	return self

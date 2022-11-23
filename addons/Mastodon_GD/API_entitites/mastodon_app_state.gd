@@ -17,6 +17,8 @@ func from_json(json: Dictionary):
 	self.client_id = json.get('client_id')
 	self.client_secret = json.get('client_secret')
 	
+	return self
+	
 func to_json():
 	return {
 		'name' : self.name,

@@ -12,6 +12,8 @@ func from_json(json: Dictionary):
 	self.token_type = json.get("token_type")
 	self.scope = json.get('scope')
 	self.created_at = json.get('created_at')
+	
+	return self
 
 func to_json():
 	return {

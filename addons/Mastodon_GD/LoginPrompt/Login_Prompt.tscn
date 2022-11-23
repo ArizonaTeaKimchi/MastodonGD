@@ -32,13 +32,11 @@ grow_vertical = 2
 script = ExtResource("1_vr642")
 
 [node name="Panel" type="Panel" parent="."]
-layout_mode = 0
 offset_right = 453.0
 offset_bottom = 453.0
 theme = SubResource("Theme_nspoe")
 
 [node name="TextureRect" type="TextureRect" parent="Panel"]
-layout_mode = 1
 anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
@@ -51,7 +49,6 @@ texture = ExtResource("2_s445x")
 ignore_texture_size = true
 
 [node name="Label" type="Label" parent="Panel"]
-layout_mode = 1
 anchors_preset = 7
 anchor_left = 0.5
 anchor_top = 1.0
@@ -68,7 +65,6 @@ text = "A browser should open shortly, copy and paste the access token below to 
 autowrap_mode = 3
 
 [node name="TokenField" type="TextEdit" parent="Panel"]
-layout_mode = 1
 anchors_preset = 7
 anchor_left = 0.5
 anchor_top = 1.0

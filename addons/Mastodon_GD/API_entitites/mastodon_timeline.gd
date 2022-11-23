@@ -9,3 +9,5 @@ func from_json(json_array: Array):
 		var status = MastodonStatus.new()
 		status.from_json(product)
 		self.timeline.append(status)
+	
+	return self
