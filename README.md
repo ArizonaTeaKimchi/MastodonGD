@@ -2,7 +2,7 @@
 
 A Mastodon Client addon for the [Godot Game Engine](https://godotengine.org/).
 
-_**NOTE:** This is addon is for Godot 4 only, and is deeply still a work in progress._
+_**NOTE:** This is addon is for Godot 4 only, and is still deeply a work in progress._
 
 ## Installation
 
@@ -22,7 +22,7 @@ func _ready():
 
     # This value will be used to encrypt and decrypt client-side application and token data
     # leave blank if you don't want app and token data to be stored
-    # (This will require the user to log back to their account every time they open your app).
+    # (This will require the user to log back in to their account every time they open your app).
     var client_side_encryption_key: String = 'Secret decryption/encyption key' 
 
     self.mastodon_client: MastodonClient = MastodonClient.new()
