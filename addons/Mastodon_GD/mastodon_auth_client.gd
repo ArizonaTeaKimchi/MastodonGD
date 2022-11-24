@@ -28,7 +28,7 @@ func get_application(instance: String, application_name: String, password: Strin
 
 	if _app_exists(instance, application_name) and save_credentials:
 		app_info = self._load_app(instance, password)
-		print("Found existing app for instance: %s" % instance)
+		print("Found existing app for instance: \"%s\"" % instance)
 	else:
 		app_info = await self._create_app(instance, application_name)
 		if save_credentials:
