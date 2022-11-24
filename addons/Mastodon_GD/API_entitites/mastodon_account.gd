@@ -1,3 +1,4 @@
+# https://docs.joinmastodon.org/entities/Account/
 extends Resource
 
 class_name MastodonAccount
@@ -18,8 +19,8 @@ var header_static: String
 var followers_count: int
 var following_count: int
 var statuses_count:  int
-var last_status_at: String
-var emojis: Array[Dictionary]
+var last_status_at
+var emojis: Array[MastodonCustomEmoji] = []
 var fields: Array[Dictionary]
 
 func from_json(json: Dictionary):
@@ -42,7 +43,9 @@ func from_json(json: Dictionary):
 	self.statuses_count = json.get("statuses_count")
 	self.last_status_at = json.get("last_status_at")
 
-	self.emojis = json.get("emojis")
+	for emoji in json.get('emojis'):
+		self.emojis.append(MastodonCustomEmoji.new().from_json(emoji))
+
 	self.fields = json.get("fields")
 	
 	return self

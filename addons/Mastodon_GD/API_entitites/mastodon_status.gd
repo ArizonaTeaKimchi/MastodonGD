@@ -1,37 +1,42 @@
+# https://docs.joinmastodon.org/entities/Status/
 extends Resource
 
 class_name MastodonStatus
 
-# type annotations are missing because variables are non-nulalble in GDSCript
+# type annotations are missing because base types are non-nulalble in GDSCript
 var id: String
+var uri: String
 var created_at: String
-var in_reply_to_id
-var in_reply_to_account_id
+var account: MastodonAccount
+var content: String
+var visibility: String
 var sensitive: bool
 var spoiler_text
-var visibility: String
-var language
-var uri: String
-var url
+var media_attachments: Array[MastodonMediaAttachment] = []
+var application: MastodonAppState
+var mentions: Array
+var tags: Array[MastodonTag] = []
+var emojis: Array[MastodonCustomEmoji] = []
 var replies_count: float
 var reblogs_count: float
 var favourites_count: float
+var url
+var in_reply_to_id
+var in_reply_to_account_id
+var reblog: MastodonStatus
+var poll
+var card: MastodonPreviewCard
+var language
+var text
+var edited_at
 var favourited
 var reblogged
 var muted
 var bookmarked
-var content: String
-var reblog: MastodonStatus
-var application
-var account: MastodonAccount
-var media_attachments: Array[MastodonMediaAttachment]
-var mentions: Array
-var tags: Array
-var emojis: Array
-var card
-var poll
+var pinned
+var filtered
 
-func from_json(json: Dictionary):
+func from_json(json: Dictionary) -> MastodonStatus:
 	self.id = json.get('id')
 	self.created_at = json.get('created_at')
 	self.in_reply_to_id = json.get('in_reply_to_id')
@@ -51,12 +56,17 @@ func from_json(json: Dictionary):
 	self.bookmarked = json.get('bookmarked')
 	self.content = json.get('content')
 	
-	self.application = json.get('application')
+	self.application = MastodonAppState.new().from_json(json.get('application'), true) if json.get('application') != null else null
 
 	self.mentions = json.get('mentions')
-	self.tags = json.get('tags')
-	self.emojis = json.get('emojis')
-	self.card = json.get('card')
+
+	for tag in json.get('tags'):
+		self.tags.append(MastodonTag.new().from_json(tag))
+
+	for emoji in json.get('emojis'):
+		self.emojis.append(MastodonCustomEmoji.new().from_json(emoji))
+
+	self.card = MastodonPreviewCard.new().from_json(json.get('card')) if json.get('card') != null else null
 	self.poll = json.get('poll')
 
 	self.account = MastodonAccount.new()
@@ -68,17 +78,19 @@ func from_json(json: Dictionary):
 		self.reblogged = false
 	if self.bookmarked == null:
 		self.bookmarked = false
-	
+	if self.muted == null:
+		self.muted = false
+	if self.pinned == null:
+		self.pinned = false
+	if self.filtered == null:
+		self.filtered = []
+
 	if json['reblog'] != null:
-		self.reblog = MastodonStatus.new()
-		self.reblog.from_json(json.get('reblog'))
+		self.reblog = MastodonStatus.new().from_json(json.get('reblog'))
 	else:
 		self.reblog = null
-	
-	var attachments = json.get('media_attachments')
-	
-	self.media_attachments = []
-	for attachment in attachments:
+
+	for attachment in json.get('media_attachments'):
 		self.media_attachments.append(MastodonMediaAttachment.new().from_json(attachment))
 
 	return self

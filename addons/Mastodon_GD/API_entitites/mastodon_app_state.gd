@@ -1,3 +1,4 @@
+# https://docs.joinmastodon.org/entities/Application/
 extends Resource
 
 class_name MastodonAppState
@@ -9,13 +10,15 @@ var website
 @export var client_id: String
 @export var client_secret: String
 
-func from_json(json: Dictionary):
+func from_json(json: Dictionary, is_external: bool = false):
 	self.name = json.get('name')
-	self.id = json.get('id')
-	self.redirect_uri = json.get('redirect_uri')
 	self.website = json.get('website')
-	self.client_id = json.get('client_id')
-	self.client_secret = json.get('client_secret')
+
+	if not is_external:
+		self.id = json.get('id')
+		self.redirect_uri = json.get('redirect_uri')
+		self.client_id = json.get('client_id')
+		self.client_secret = json.get('client_secret')
 	
 	return self
 	

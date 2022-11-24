@@ -42,7 +42,7 @@ func Init_Client(instance: String, app_name: String, password: String = '', logi
 	self.current_user = await self.get_user_account()
 
 func get_instance() -> MastodonInstance:
-	var instance_dict = await self._request('/api/v1/instance', HTTPClient.METHOD_GET)
+	var instance_dict = await self._request('/api/v2/instance', HTTPClient.METHOD_GET)
 	return MastodonInstance.new().from_json(instance_dict)
 
 func get_user_account():
@@ -50,7 +50,6 @@ func get_user_account():
 	var response = await self._request(path, HTTPClient.METHOD_GET, PackedStringArray(["Authorization: Bearer %s" % self.token.access_token]))
 	
 	return MastodonAccount.new().from_json(response)
-
 
 func get_account(account_id: String) -> MastodonAccount:
 	var account_path = "/api/v1/accounts/" + account_id
@@ -209,7 +208,7 @@ func get_notifications(types = [], exclude = []) -> Array[MastodonNotification]:
 	
 	return notifcations
 
-func post_status(status_text: String, media_path: String, media_description: String, visibility: String = 'public', sensitive: bool = false, sensitive_text: String=''):
+func post_status(status_text: String, media_path: String, media_description: String, visibility: String = 'public', sensitive: bool = false, sensitive_text: String='', scheduled_at: String='', language: String = ''):
 	var status_path = '/api/v1/statuses'
 
 	var media_id = null
@@ -228,13 +227,19 @@ func post_status(status_text: String, media_path: String, media_description: Str
 		data['sensitive'] = sensitive
 		data['spoiler_text'] = sensitive_text if not sensitive_text.is_empty() else 'The user has marked this content as sensitive'
 	
+	if not scheduled_at.is_empty():
+		data['scheduled_at'] = scheduled_at
+	
+	if not language.is_empty():
+		data['language'] = language
+	
 	var response = await self._request(status_path, HTTPClient.METHOD_POST, PackedStringArray(["Authorization: Bearer %s" % self.token.access_token]), data)
 
 func view_status(status_id: String) -> MastodonStatus:	
 	var status_dict = await self._status('', status_id, HTTPClient.METHOD_GET)
 	
 	return MastodonStatus.new().from_json(status_dict)
-
+	
 func delete_status(status_id: String):
 	self._status('', status_id, HTTPClient.METHOD_DELETE)
 
@@ -289,6 +294,19 @@ func pin_to_profile(status_id: String):
 
 func undo_pin_to_profile(status_id: String):
 	self._status('/unpin', status_id, HTTPClient.METHOD_POST)
+
+func view_status_source(status_id: String) -> MastodonStatusSource:
+	var result = await self._status('/source', status_id, HTTPClient.METHOD_GET)
+	return MastodonStatusSource.new().from_json(result)
+
+func view_status_edit_history(status_id: String) -> Array[MastodonStatusEdit]:
+	var result = await self._status('/history', status_id, HTTPClient.METHOD_GET)
+	
+	var edits: Array[MastodonStatusEdit] = []
+	for edit in result:
+		edits.append(MastodonStatusEdit.new().from_json(edit))
+	
+	return edits
 
 func _get_accounts_by_status_action(endpoint: String, status_id: String):
 	var users: Array[MastodonAccount] = []
@@ -355,8 +373,23 @@ func upload_media(file_path: String, description: String = ''):
 	
 	return null
 
-func post_new_status(status: String, media_ids: Array = [], poll_options: Array = [], poll_expires_in: float = 1.0):
-	pass
+func get_follow_suggestions(limit: int = 40) -> Array[MastodonSuggestion]:
+	var endpoint = '/api/v2/suggestions?limit=' + str(limit)
+	var headers = PackedStringArray(["Authorization: Bearer %s" % self.token.access_token])
+	
+	var response = await self._request(endpoint, HTTPClient.METHOD_GET, headers)
+	
+	var suggestions: Array[MastodonSuggestion] = []
+	for suggestion in response:
+		suggestions.append(MastodonSuggestion.new().from_json(suggestion))
+	
+	return suggestions
+
+func remove_follow_suggestion(account_id: String):
+	var endpoint = '/api/v1/suggestions/' + account_id
+	var headers = PackedStringArray(["Authorization: Bearer %s" % self.token.access_token])
+
+	await self._request(endpoint, HTTPClient.METHOD_DELETE, headers)
 
 func _request_raw(path: String, method: HTTPClient.Method, headers = [], data: PackedByteArray = PackedByteArray([])):
 	var base_url = "https://" + self.instance_name + path

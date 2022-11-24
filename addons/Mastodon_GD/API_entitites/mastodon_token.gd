@@ -1,3 +1,4 @@
+# https://docs.joinmastodon.org/entities/Token/
 extends Resource
 
 class_name MastodonToken
