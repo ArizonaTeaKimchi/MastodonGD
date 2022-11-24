@@ -42,9 +42,10 @@ func from_json(json: Dictionary):
 	self.following_count = json.get("following_count")
 	self.statuses_count = json.get("statuses_count")
 	self.last_status_at = json.get("last_status_at")
-
-	for emoji in json.get('emojis'):
-		self.emojis.append(MastodonCustomEmoji.new().from_json(emoji))
+	
+	if json.get('emojis') != null:
+		for emoji in json.get('emojis'):
+			self.emojis.append(MastodonCustomEmoji.new().from_json(emoji))
 
 	self.fields = json.get("fields")
 	

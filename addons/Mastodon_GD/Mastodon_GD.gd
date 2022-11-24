@@ -45,6 +45,15 @@ func get_instance() -> MastodonInstance:
 	var instance_dict = await self._request('/api/v2/instance', HTTPClient.METHOD_GET)
 	return MastodonInstance.new().from_json(instance_dict)
 
+func get_instance_moderated_servers() -> Array[MastodonDomainBlock]:
+	var results = await self._request('/api/v2/instance/domain_block', HTTPClient.METHOD_GET)
+	
+	var domainBlocks: Array[MastodonDomainBlock] = []
+	for domain in results:
+		domainBlocks.append(MastodonDomainBlock.new().from_json(domain))
+	
+	return domainBlocks
+
 func get_user_account():
 	var path = '/api/v1/accounts/verify_credentials'
 	var response = await self._request(path, HTTPClient.METHOD_GET, PackedStringArray(["Authorization: Bearer %s" % self.token.access_token]))
@@ -167,8 +176,32 @@ func unfeature_on_profile(account_id: String):
 func set_user_note(account_id: String, comment: String):
 	self._post_account(account_id, '/note', {'comment': comment})
 
-func get_relationships(account_ids: Array[String]):
-	return await self._get_account('', 'relationships', {'id[]': account_ids})
+func get_relationships(account_ids: Array[String]) -> Array[MastodonRelationship]:
+	var results = await self._get_account('', '/relationships', {'id[]': account_ids})
+
+	var lists: Array[MastodonRelationship] = []
+	for list in results:
+		lists.append(MastodonRelationship.new().from_json(list))
+	
+	return lists
+
+func get_lists(account_id: String) -> Array[MastodonList]:
+	var results = await self._get_account(account_id, '/lists')
+
+	var lists: Array[MastodonList] = []
+	for list in results:
+		lists.append(MastodonList.new().from_json(list))
+	
+	return lists
+
+func get_familiar_followers(account_ids: Array[String]) -> Array[MastodonFamiliarFollower]:
+	var results = await self._get_account('', 'familiar_followers', {'id[]': account_ids})
+	
+	var familiar_followers: Array[MastodonFamiliarFollower] = []
+	for familiar in results:
+		familiar_followers.append(MastodonFamiliarFollower.new().from_json(familiar))
+	
+	return familiar_followers
 
 func search_for_account(query: String):
 	return await self._get_account('', 'search', {'q': query})
@@ -419,8 +452,8 @@ func _request(path: String, method: HTTPClient.Method, headers = [], data: Dicti
 		var response = await self.auth_client.request_completed
 		return callv("_on_response", response)
 	elif error == ERR_BUSY:
-		self.auth_client.cancel_request()
-#		await self.auth_client.request_completed
+#		self.auth_client.cancel_request()
+		await self.auth_client.request_completed
 		return await self._request(path, method, headers, data)
 
 func _on_response(result, response_code, headers, body):
