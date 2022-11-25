@@ -114,6 +114,75 @@ func _get_trending(endpoint: String, limit: int = 10):
 	
 	return await self._request(endpoint, HTTPClient.METHOD_GET, [], data)
 
+## PROFILE DIRECTORY ENDPOINT
+## https://docs.joinmastodon.org/methods/directory/
+
+func get_profile_directory(offset: int = 0, limit: int = 40, order: String = 'active', local: bool = false) ->  Array[MastodonAccount]:
+	var endpoint = '/api/v1/directory'
+	var data = {
+		'offset': offset,
+		'limit': limit,
+		'order': order,
+		'local': local
+	}
+	
+	var response = await self._request(endpoint, HTTPClient.METHOD_GET, [], data)
+	
+	var accounts: Array[MastodonAccount] = []
+	for account in response:
+		accounts.append(MastodonAccount.new().from_json(account))
+	
+	return accounts
+
+## CUSTOM EMOJI ENDPOINT
+## https://docs.joinmastodon.org/methods/custom_emojis/
+
+func get_custom_emojis() -> Array[MastodonCustomEmoji]:
+	var endpoint = '/api/v1/custom_emojis'
+	var result = await self._request(endpoint, HTTPClient.METHOD_GET)
+
+	var emojis: Array[MastodonCustomEmoji] = []
+	for emoji in result:
+		emojis.append(MastodonCustomEmoji.new().from_json(emoji))
+
+	return emojis
+
+## ANNOUNCEMENTS ENDPOINTS
+## https://docs.joinmastodon.org/methods/announcements/
+
+func get_announcements(with_dismissed: bool = false) -> Array[MastodonAnnouncement]:
+	var endpoint = '/api/v1/announcements'
+	var result = await self._request(endpoint, HTTPClient.METHOD_GET, PackedStringArray(["Authorization: Bearer %s" % self.token.access_token]), {'with_dismissed': with_dismissed})
+	
+	var announcements: Array[MastodonAnnouncement] = []
+	for announcement in result:
+		announcements.append(MastodonAnnouncement.new().from_json(announcement))
+	
+	return announcements
+
+func dismiss_announcement(announcement_id: String):
+	var endpoint = '/api/v1/announcements/' + announcement_id + '/dismiss'
+	self._request(endpoint, HTTPClient.METHOD_POST, PackedStringArray(["Authorization: Bearer %s" % self.token.access_token]))
+
+func add_reaction_to_announcement(announcement_id: String, emoji: String):
+	# (FROM DOCS: Unicode emoji, or the shortcode of a custom emoji)
+	var endpoint = '/api/v1/announcements/' + announcement_id + '/reactions/' + emoji
+	self._request(endpoint, HTTPClient.METHOD_PUT, PackedStringArray(["Authorization: Bearer %s" % self.token.access_token]))
+
+func remove_reaction_to_announcement(announcement_id: String, emoji: String):
+	# (FROM DOCS: Unicode emoji, or the shortcode of a custom emoji)
+	var endpoint = '/api/v1/announcements/' + announcement_id + '/reactions/' + emoji
+	self._request(endpoint, HTTPClient.METHOD_DELETE, PackedStringArray(["Authorization: Bearer %s" % self.token.access_token]))
+
+func get_oembed_info(url: String, max_width: int = 400, max_height: int = -1) -> Dictionary:
+	var endpoint = '/api/oembed'
+	var data = {
+		'url': url,
+		'maxwidth': max_width,
+		'maxheight': null if max_height < 0 else max_height
+	}
+	return await self._request(endpoint, HTTPClient.METHOD_GET, [], data)
+	
 ## ACCOUNT ENDPOINTS
 ## https://docs.joinmastodon.org/methods/accounts/
 
