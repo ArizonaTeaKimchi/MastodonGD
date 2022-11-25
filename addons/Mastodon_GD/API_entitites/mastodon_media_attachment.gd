@@ -10,7 +10,7 @@ var preview_url: String = ''
 var remote_url
 var meta: Dictionary = {}
 var description: String = ''
-var blurhash: String
+var blurhash: String = ''
 
 func from_json(json: Dictionary):
 	self.id = json.get('id')
@@ -26,6 +26,8 @@ func from_json(json: Dictionary):
 	
 	if json.get('description') != null:
 		self.description = json.get('description')
-	self.blurhash = json.get('blurhash')
+
+	if json.get('blurhash') != null:
+		self.blurhash = json.get('blurhash')
 	
 	return self

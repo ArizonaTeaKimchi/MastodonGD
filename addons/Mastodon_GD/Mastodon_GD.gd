@@ -41,9 +41,30 @@ func Init_Client(instance: String, app_name: String, password: String = '', logi
 	self.current_instance = await self.get_instance()
 	self.current_user = await self.get_user_account()
 
+## INSTANCE ENDPOINTS
+## https://docs.joinmastodon.org/methods/instance/
+
 func get_instance() -> MastodonInstance:
 	var instance_dict = await self._request('/api/v2/instance', HTTPClient.METHOD_GET)
 	return MastodonInstance.new().from_json(instance_dict)
+
+func get_instance_peers() -> Array[String]:
+	var endpoint = '/api/v1/instance/peers'
+	return await self._request(endpoint, HTTPClient.METHOD_GET, PackedStringArray(["Authorization: Bearer %s" % self.token.access_token]))
+
+func get_instance_weekly_activity() -> Array[Dictionary]:
+	var endpoint = '/api/v1/instance/activity'
+	return await self._request(endpoint, HTTPClient.METHOD_GET, PackedStringArray(["Authorization: Bearer %s" % self.token.access_token]))
+
+func get_instance_rules() -> Array[MastodonRule]:
+	var endpoint ='/api/v1/instance/rules'
+	var result =  await self._request(endpoint, HTTPClient.METHOD_GET, PackedStringArray(["Authorization: Bearer %s" % self.token.access_token]))
+	
+	var rules: Array[MastodonRule] = []
+	for rule in result:
+		rules.append(MastodonRule.new().from_json(rule))
+	
+	return rules
 
 func get_instance_moderated_servers() -> Array[MastodonDomainBlock]:
 	var results = await self._request('/api/v2/instance/domain_block', HTTPClient.METHOD_GET)
@@ -53,6 +74,48 @@ func get_instance_moderated_servers() -> Array[MastodonDomainBlock]:
 		domainBlocks.append(MastodonDomainBlock.new().from_json(domain))
 	
 	return domainBlocks
+
+func get_instance_extended_description() -> MastodonExtendedDescription:
+	var endpoint = '/api/v1/example'
+	var result = await self._request(endpoint, HTTPClient.METHOD_GET)
+	var extended_description = MastodonExtendedDescription.new().from_json(result)
+	
+	return extended_description
+
+## TRENDING ENDPOINTS
+## https://docs.joinmastodon.org/methods/trends/
+
+func get_instance_trending_tags(limit: int = 10) -> Array[MastodonTag]:
+	var result = await self._get_trending('/api/v1/trends/tags', limit)
+	var trending_tags: Array[MastodonTag] = []
+	for tag in result:
+		trending_tags.append(MastodonTag.new().from_json(tag))
+
+	return trending_tags
+
+func get_instance_trending_statuses(limit: int = 10) -> Array[MastodonStatus]:
+	var result = await self._get_trending('/api/v1/trends/statuses', limit)
+	var trending_statuses: Array[MastodonStatus] = []
+	for status in result:
+		trending_statuses.append(MastodonStatus.new().from_json(status))
+
+	return trending_statuses
+
+func get_instance_trending_links(limit: int = 10) -> Array[MastodonPreviewCard]:
+	var result = await self._get_trending('/api/v1/trends/links', limit)
+	var trending_statuses: Array[MastodonPreviewCard] = []
+	for status in result:
+		trending_statuses.append(MastodonPreviewCard.new().from_json(status))
+
+	return trending_statuses
+
+func _get_trending(endpoint: String, limit: int = 10):
+	var data = {'limit': limit}
+	
+	return await self._request(endpoint, HTTPClient.METHOD_GET, [], data)
+
+## ACCOUNT ENDPOINTS
+## https://docs.joinmastodon.org/methods/accounts/
 
 func get_user_account():
 	var path = '/api/v1/accounts/verify_credentials'
@@ -89,72 +152,6 @@ func get_preferences():
 #	if self.current_instance.approval_required or require_auth:
 	headers = PackedStringArray(["Authorization: Bearer %s" % self.token.access_token])
 	return await self._request(path, HTTPClient.METHOD_GET, headers)
-	
-func get_home_timeline(max_id: String = '', since_id: String = '', min_id: String = '', limit: int = 20) -> MastodonTimeline:
-	var data = {
-		'limit': limit
-	}
-	
-	if not max_id.is_empty():
-		data['max_id'] = max_id
-	if not min_id.is_empty():
-		data['min_id'] = min_id
-	if not since_id.is_empty():
-		data['since_id'] = since_id
-
-	return await self._get_timeline('home', data)
-
-func get_public_timeline(local: bool = false, remote: bool = false, only_media: bool = false, max_id: String = '', since_id: String = '', min_id: String = '', limit: int = 20) -> MastodonTimeline:
-	var data = {
-		'local': local,
-		'remote': remote,
-		'only_media': only_media,
-		'limit': limit
-	}
-
-	if not max_id.is_empty():
-		data['max_id'] = max_id
-	if not min_id.is_empty():
-		data['min_id'] = min_id
-	if not since_id.is_empty():
-		data['since_id'] = since_id
-
-	return await self._get_timeline('public', data)
-
-func get_local_timeline(remote: bool = false, only_media: bool = false, max_id: String = '', since_id: String = '', min_id: String = '', limit: int = 20) -> MastodonTimeline:
-	return await self.get_public_timeline(true, remote, only_media, max_id, since_id, min_id, limit)
-
-func get_hashtag_timeline(hashtag: String, local: bool = false, only_media: bool = false, max_id: String = '', since_id: String = '', min_id: String = '', limit: int = 20) -> MastodonTimeline:
-	# exclude '#' symbol from hashtag param
-	
-	var data = {
-		'local': local,
-		'only_media': only_media,
-		'limit': limit
-	}
-	
-	if not max_id.is_empty():
-		data['max_id'] = max_id
-	if not min_id.is_empty():
-		data['min_id'] = min_id
-	if not since_id.is_empty():
-		data['since_id'] = since_id
-
-	return await self._get_timeline('tag/' + hashtag, data)
-
-func get_list_timeline(list_id: String, max_id: String = '', since_id: String = '', min_id: String = '', limit: int = 20) -> MastodonTimeline:
-	var data = {
-		'limit': limit
-	}
-	
-	if not max_id.is_empty():
-		data['max_id'] = max_id
-	if not min_id.is_empty():
-		data['min_id'] = min_id
-	if not since_id.is_empty():
-		data['since_id'] = since_id
-
-	return await self._get_timeline("list/" + list_id, data)
 
 func get_conversations(max_id: String = '', since_id: String = '', min_id: String = '', limit: int = 20) -> Array[MastodonConversation]:
 	var endpoint = '/api/v1/conversations'
@@ -216,34 +213,70 @@ func save_timeline_position(last_read_home_id: String = '', last_read_notificati
 	var headers = PackedStringArray(["Authorization: Bearer %s" % self.token.access_token])
 	self._request(endpoint, HTTPClient.METHOD_POST, headers, data)
 
-func get_account_statuses(account_id: String) -> MastodonTimeline:
+## ACCOUNT ENDPOINTS
+## https://docs.joinmastodon.org/methods/accounts/
+func get_account_statuses(account_id: String, max_id: String = '', since_id: String = '', min_id: String = '', limit: int = 20, exclude_reblogs: bool = false, tagged: String = '') -> MastodonTimeline:
 	var endpoint = "/statuses"
 	
-	var account_statuses_dict = await self._get_account(account_id, endpoint)
+	var data = {
+		'limit': limit, 
+		'exclude_reblogs': exclude_reblogs 
+	}
+
+	if not max_id.is_empty():
+		data['max_id'] = max_id
+	if not since_id.is_empty():
+		data['since_id'] = since_id
+	if not min_id.is_empty():
+		data['min_id'] = min_id
+	if not tagged.is_empty():
+		data['tagged'] = tagged
+
+	var account_statuses_dict = await self._get_account(account_id, endpoint, data)
 	
 	return MastodonTimeline.new().from_json(account_statuses_dict)
 
-func get_account_followers(account_id: String) -> Array[MastodonAccount]:
+func get_account_followers(account_id: String, max_id: String = '', since_id: String = '', min_id: String = '', limit: int = 20) -> Array[MastodonAccount]:
 	var endpoint = '/followers'
-	var response: Array[MastodonAccount] = [] as Array[MastodonAccount]
+	var data = {
+		'limit' = limit
+	}
 
-	var accounts_dict = await self._get_account(account_id, endpoint)
+	if not max_id.is_empty():
+		data['max_id'] = max_id
+	if not since_id.is_empty():
+		data['since_id'] = since_id
+	if not min_id.is_empty():
+		data['min_id'] = min_id
 
-	for account in accounts_dict:
-		response.append(MastodonAccount.new().from_json(account))
+	var response = await self._get_account(account_id, endpoint)
 	
-	return response
+	var accounts: Array[MastodonAccount] = []
+	for account in response:
+		accounts.append(MastodonAccount.new().from_json(account))
+	
+	return accounts
 
-func get_account_following(account_id: String) -> Array[MastodonAccount]:
+func get_account_following(account_id: String, max_id: String = '', since_id: String = '', min_id: String = '', limit: int = 20) -> Array[MastodonAccount]:
 	var endpoint = '/following'
-	var response: Array[MastodonAccount] = [] as Array[MastodonAccount]
+	var data = {
+		'limit' = limit
+	}
 
-	var accounts_dict = await self._get_account(account_id, endpoint)
+	if not max_id.is_empty():
+		data['max_id'] = max_id
+	if not since_id.is_empty():
+		data['since_id'] = since_id
+	if not min_id.is_empty():
+		data['min_id'] = min_id
 
-	for account in accounts_dict:
-		response.append(MastodonAccount.new().from_json(account))
+	var response = await self._get_account(account_id, endpoint, data)
+
+	var accounts: Array[MastodonAccount] = [] 
+	for account in response:
+		accounts.append(MastodonAccount.new().from_json(account))
 	
-	return response
+	return accounts
 
 func get_account_featured_tags(account_id: String) -> Array[MastodonFeaturedTag]:
 	var endpoint = '/featured_tags'
@@ -265,12 +298,16 @@ func get_account_lists(account_id: String) -> Array[MastodonList]:
 	
 	return lists
 
-func get_account_identity_proofs(account_id: String):
-	var endpoint = 'identity_proofs'
-	return await self._get_account(account_id, endpoint)
+func follow_account(account_id: String, reblogs: bool = true, notify: bool = false, languages: Array[String] = [] as Array[String]):
+	var data = {
+		'reblogs': reblogs,
+		'notify': notify
+	}
+	
+	if languages.size() > 0:
+		data['languages'] = languages
 
-func follow_account(account_id: String):
-	self._post_account(account_id, '/follow')
+	self._post_account(account_id, '/follow', data)
 
 func unfollow_account(account_id: String):
 	self._post_account(account_id, '/unfollow')
@@ -284,8 +321,12 @@ func block_account(account_id: String):
 func unblock_account(account_id: String):
 	self._post_account(account_id, '/unblock')
 
-func mute_account(account_id: String):
-	self._post_account(account_id, '/mute')
+func mute_account(account_id: String, notifications: bool = true, duration: int = 0):
+	var data = {
+		'notifications': notifications,
+		'duration': duration 
+	}
+	self._post_account(account_id, '/mute', data)
 
 func unmute_account(account_id: String):
 	self._post_account(account_id, '/unmute')
@@ -326,8 +367,20 @@ func get_familiar_followers(account_ids: Array[String]) -> Array[MastodonFamilia
 	
 	return familiar_followers
 
-func search_for_account(query: String):
-	return await self._get_account('', 'search', {'q': query})
+func search_for_account(query: String, limit: int = 40, resolve: bool = false, following: bool = false) -> Array[MastodonAccount]:
+	var data = {
+		'q': query,
+		'limit': limit,
+		'resolve': resolve,
+		'following': following
+	}
+	var results = await self._get_account('', 'search', data)
+	
+	var accounts: Array[MastodonAccount] = []
+	for account in results:
+		accounts.append(MastodonAccount.new().from_json(account))
+	
+	return accounts
 
 func lookup_account_from_webfinger_address(acct: String, skip_webfinger: bool = true) -> MastodonAccount:
 	var result = await self._get_account('', 'lookup', {'acct': acct, 'skip_webfinger': skip_webfinger})
@@ -345,6 +398,10 @@ func _post_account(account_id: String, end_point: String = '', data: Dictionary 
 
 	pass
 
+
+## TIMELINE ENDPOINTS
+## https://docs.joinmastodon.org/methods/timelines/
+
 func _get_timeline(timeline_version: String, data: Dictionary = {}) -> MastodonTimeline:
 	var timelines_base = '/api/v1/timelines/' + timeline_version
 	
@@ -355,11 +412,82 @@ func _get_timeline(timeline_version: String, data: Dictionary = {}) -> MastodonT
 	var timeline = MastodonTimeline.new()
 	return timeline.from_json(instance_dict)
 
-func get_notifications(types = [], exclude = []) -> Array[MastodonNotification]:
+func get_public_timeline(local: bool = false, remote: bool = false, only_media: bool = false, max_id: String = '', since_id: String = '', min_id: String = '', limit: int = 20) -> MastodonTimeline:
+	var data = {
+		'local': local,
+		'remote': remote,
+		'only_media': only_media,
+		'limit': limit
+	}
+
+	if not max_id.is_empty():
+		data['max_id'] = max_id
+	if not min_id.is_empty():
+		data['min_id'] = min_id
+	if not since_id.is_empty():
+		data['since_id'] = since_id
+
+	return await self._get_timeline('public', data)
+
+func get_local_timeline(remote: bool = false, only_media: bool = false, max_id: String = '', since_id: String = '', min_id: String = '', limit: int = 20) -> MastodonTimeline:
+	return await self.get_public_timeline(true, remote, only_media, max_id, since_id, min_id, limit)
+
+func get_hashtag_timeline(hashtag: String, local: bool = false, only_media: bool = false, max_id: String = '', since_id: String = '', min_id: String = '', limit: int = 20) -> MastodonTimeline:
+	# exclude '#' symbol from hashtag param
+	var data = {
+		'local': local,
+		'only_media': only_media,
+		'limit': limit
+	}
+	
+	if not max_id.is_empty():
+		data['max_id'] = max_id
+	if not min_id.is_empty():
+		data['min_id'] = min_id
+	if not since_id.is_empty():
+		data['since_id'] = since_id
+
+	return await self._get_timeline('tag/' + hashtag, data)
+
+func get_home_timeline(max_id: String = '', since_id: String = '', min_id: String = '', limit: int = 20) -> MastodonTimeline:
+	var data = {'limit': limit}
+	
+	if not max_id.is_empty():
+		data['max_id'] = max_id
+	if not min_id.is_empty():
+		data['min_id'] = min_id
+	if not since_id.is_empty():
+		data['since_id'] = since_id
+
+	return await self._get_timeline('home', data)
+
+func get_list_timeline(list_id: String, max_id: String = '', since_id: String = '', min_id: String = '', limit: int = 20) -> MastodonTimeline:
+	var data = {'limit': limit}
+	
+	if not max_id.is_empty():
+		data['max_id'] = max_id
+	if not min_id.is_empty():
+		data['min_id'] = min_id
+	if not since_id.is_empty():
+		data['since_id'] = since_id
+
+	return await self._get_timeline("list/" + list_id, data)
+
+## NOTIFICATION ENDPOINTS
+
+func get_notifications(data: Dictionary) -> Array[MastodonNotification]:
+	# OPTIONAL
+	# max_id : String
+	# since_id : String
+	# min_id: String
+	# limit: int = 20
+	# types[]: String
+	# exclude_types[]: String
+	# account_id : String
 	var endpoint = '/api/v1/notifications'
 	var headers = PackedStringArray(["Authorization: Bearer %s" % self.token.access_token])
-
-	var response = await self._request(endpoint, HTTPClient.METHOD_GET, headers)
+	
+	var response = await self._request(endpoint, HTTPClient.METHOD_GET, headers, data)
 	var notifcations: Array[MastodonNotification] = []
 	
 	for n in response:
@@ -367,6 +495,52 @@ func get_notifications(types = [], exclude = []) -> Array[MastodonNotification]:
 		notifcations.append(notification)
 	
 	return notifcations
+
+func get_notification(notification_id: String) -> MastodonNotification:
+	var endpoint = '/api/v1/notifications/' + notification_id
+	var headers = PackedStringArray(["Authorization: Bearer %s" % self.token.access_token])
+	var result = await self._request(endpoint, HTTPClient.METHOD_GET, headers)
+	var notification = MastodonNotification.new().from_json(result)
+	return notification
+
+func dismiss_all_notifications():
+	var endpoint = '/api/v1/notifications/clear'
+	var headers = PackedStringArray(["Authorization: Bearer %s" % self.token.access_token])
+	self._request(endpoint, HTTPClient.METHOD_POST, headers)
+
+## SEARCH ENDPOINT
+## https://docs.joinmastodon.org/methods/search/
+
+func search(query: String, type: String = '', resolve: bool = false, following: bool = false, account_id: String = '', exclude_unreviewed: bool = false, max_id: String = '', min_id: String = '', limit: int = 20, offset: int = 0):
+	var endpoint = '/api/v2/search'
+	
+	var data = {
+		'q': query,
+		'resolve': resolve,
+		'following': following,
+		'exclude_unreviewed': exclude_unreviewed,
+		'limit': limit,
+		'offset': offset
+	}
+	
+	if not type.is_empty():
+		data['type'] = type
+	if not max_id.is_empty():
+		data['max_id'] = max_id
+	if not min_id.is_empty():
+		data['min_id'] = min_id
+	if not account_id.is_empty():
+		data['account_id'] = account_id
+
+	var headers = PackedStringArray(["Authorization: Bearer %s" % self.token.access_token])
+	
+	var result = await self._request(endpoint, HTTPClient.METHOD_GET, headers, data)
+	
+	var search_result: MastodonSearch = MastodonSearch.new().from_json(result)
+	return search_result
+
+## STATUS ENDPOINTS
+## https://docs.joinmastodon.org/methods/statuses/
 
 func post_status(status_text: String, media_path: String, media_description: String, visibility: String = 'public', sensitive: bool = false, sensitive_text: String='', scheduled_at: String='', language: String = ''):
 	var status_path = '/api/v1/statuses'
