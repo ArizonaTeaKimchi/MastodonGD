@@ -611,31 +611,62 @@ func search(query: String, type: String = '', resolve: bool = false, following: 
 ## STATUS ENDPOINTS
 ## https://docs.joinmastodon.org/methods/statuses/
 
-func post_status(status_text: String, media_path: String, media_description: String, visibility: String = 'public', sensitive: bool = false, sensitive_text: String='', scheduled_at: String='', language: String = ''):
+## PARAMS DICT
+# REQUIRED
+# status: String (OPTIONAL if media provided)
+#
+# OPTIONAL
+# in_reply_to_id: String
+# visiblity: String (public/unlisted/private/direct)
+# sensitive: bool
+# spoiler_text: String
+# scheduled_at: String (ISO 8601 Datetime) 
+# language: String (ISO 639 language code)
+
+## ARRAY OF MEDIA_PARAMS DICTS
+# REQUIRED
+# media_name: String (requires extension)
+# media: PackedByteArray
+#
+# OPTIONAL
+# media_thumbnail: PackedByteArray
+# media_description: String (consider nudging user to writing media descriptions)
+# focus: String (comma seperated 'x,y' uv coordinates, -1.0 through 1.0, defaults to '0.0,0.0')
+
+## POLL_PARAMS DICT
+# REQUIRED
+# poll[options][]: Array[String]
+# poll[expires_in]: String: int (in seconds)
+#
+# OPTIONAL
+# poll[multiple]: bool = false
+# poll[hide_totals]: bool = false
+
+func post_status(status_params: Dictionary = {}, media_params: Array[Dictionary] = [] as Array[Dictionary], poll_params: Dictionary = {}):
 	var status_path = '/api/v1/statuses'
+	
+	var media_ids = []
+	if not media_params.is_empty():
+		for attachment in media_params:
+			var a = await self.upload_media_as_attachment(attachment)
+			if a != null:
+				if not a.id.is_empty():
+					media_ids.append(a.id)
 
-	var media_id = null
-	if not media_path.is_empty():
-		media_id = await self.upload_media(media_path, media_description)
+	var data = {}
 
-	var data = {
-			'status': status_text,
-			'visibility': visibility
-		}
+	if not media_ids.is_empty():
+		data['media_ids[]'] = media_ids
+	
+	for key in status_params:
+		data[key] = status_params[key]
 
-	if media_id != null and not media_path.is_empty():
-		data['media_ids[]'] = [media_id]
-	
-	if sensitive:
-		data['sensitive'] = sensitive
-		data['spoiler_text'] = sensitive_text if not sensitive_text.is_empty() else 'The user has marked this content as sensitive'
-	
-	if not scheduled_at.is_empty():
-		data['scheduled_at'] = scheduled_at
-	
-	if not language.is_empty():
-		data['language'] = language
-	
+	if data.get('sensitive', false):
+		data['spoiler_text'] = status_params.get('spoiler_text', 'The user has marked this content as sensitive')
+
+	for key in poll_params:
+		data[key] = poll_params[key]
+
 	var response = await self._request(status_path, HTTPClient.METHOD_POST, PackedStringArray(["Authorization: Bearer %s" % self.token.access_token]), data)
 
 func view_status(status_id: String) -> MastodonStatus:	
@@ -720,38 +751,43 @@ func _status(endpoint: String, status_id: String, method: HTTPClient.Method = HT
 		"Authorization: Bearer %s" % self.token.access_token])
 	return await self._request(url, method, headers)
 	
+## MEDIA ENDPOINTS
+## https://docs.joinmastodon.org/methods/media/
 
-func upload_media(file_path: String, description: String = ''):
-	var file_name = file_path.split("/")[-1]
-	var file_extension = file_name.split('.')[-1]
-	var mime_type = ''
-	if file_extension in self.jpegs:
-		mime_type = 'image/jpeg'
-	elif file_extension == 'png':
-		mime_type = 'image/png'
-	elif file_extension == 'webm':
-		mime_type = 'video/webm'
-	elif file_extension == 'mp4':
-		mime_type = 'video/mp4'
-	else:
-		push_error(("Failed to upload file of type %s" % file_extension) + " accepted formats include jpg, png, webm, and mp4")
-		return false
+func upload_media_as_attachment(media_params: Dictionary) -> MastodonMediaAttachment:
+	var file_name: String = media_params.get('media_name')
+	var media: PackedByteArray = media_params.get('media')
+	var thumbnail: PackedByteArray = media_params.get('thumbnail', PackedByteArray([]))
+	var description: String = media_params.get('media_description', '')
+	var focus: String = media_params.get('focus', '0.0,0.0')
 
-	var file = FileAccess.open(file_path, FileAccess.READ)
-	var file_buffer = file.get_buffer(file.get_length())
-	
+	var mime_type = self._get_mime_type(file_name)
+	if mime_type == '':
+		return null
+
 	var media_path = '/api/v2/media'
 
 	var headers = PackedStringArray([
 		"Authorization: Bearer %s" % self.token.access_token,
 		"Content-Type: multipart/form-data; boundary=???"
 		])
+
 	var body = PackedByteArray()
 	body.append_array("\r\n--???\r\n".to_utf8_buffer())
 	body.append_array(("Content-Disposition: form-data; name=\"file\"; filename=\"" + file_name + "\"\r\n").to_utf8_buffer())
 	body.append_array(("Content-Type:" + mime_type + "\r\n\r\n").to_utf8_buffer())
-	body.append_array(file_buffer)
+	body.append_array(media)
 
+	if not thumbnail.is_empty():
+		body.append_array("\r\n--???\r\n".to_utf8_buffer())
+		body.append_array(("Content-Disposition: form-data; name=\"thumbnail\"\r\n").to_utf8_buffer())
+		body.append_array(("Content-Type:" + mime_type + "\r\n\r\n").to_utf8_buffer())
+		body.append_array(thumbnail)
+
+	body.append_array("\r\n--???\r\n".to_utf8_buffer())
+	body.append_array(("Content-Disposition: form-data; name=\"focus\"\r\n").to_utf8_buffer())
+	body.append_array(("Content-Type: text/plain" + "\r\n\r\n").to_utf8_buffer())
+	body.append_array(focus.to_utf8_buffer())
 	
 	if not description.is_empty():
 		body.append_array("\r\n--???\r\n".to_utf8_buffer())
@@ -764,9 +800,140 @@ func upload_media(file_path: String, description: String = ''):
 	var output = await self._request_raw(media_path, HTTPClient.METHOD_POST, headers, body)
 	
 	if output != null:
-		return output.get('id')
-	
+		var attachment = MastodonMediaAttachment.new().from_json(output)
+		return attachment
 	return null
+
+func get_media_attachment(id: String) -> MastodonMediaAttachment:
+	var endpoint = '/api/v1/media/' + id
+	var response = await self._request(endpoint, HTTPClient.METHOD_GET, PackedStringArray(["Authorization: Bearer %s" % self.token.access_token]))
+
+	var media = MastodonMediaAttachment.new().from_json(response)
+	return media
+
+func update_media_attachment(id: String, file_name: String, thumbnail: PackedByteArray, description: String = '', focus: String = '0.0,0.0') -> MastodonMediaAttachment:
+	var endpoint = '/api/v1/media/' + id
+
+	var mime_type = self._get_mime_type(file_name)
+	if mime_type == '':
+		return null
+	var body: PackedByteArray = PackedByteArray()
+	if not thumbnail.is_empty():
+		body.append_array("\r\n--???\r\n".to_utf8_buffer())
+		body.append_array(("Content-Disposition: form-data; name=\"thumbnail\"\r\n").to_utf8_buffer())
+		body.append_array(("Content-Type:" + mime_type + "\r\n\r\n").to_utf8_buffer())
+		body.append_array(thumbnail)
+
+	body.append_array("\r\n--???\r\n".to_utf8_buffer())
+	body.append_array(("Content-Disposition: form-data; name=\"focus\"\r\n").to_utf8_buffer())
+	body.append_array(("Content-Type: text/plain" + "\r\n\r\n").to_utf8_buffer())
+	body.append_array(focus.to_utf8_buffer())
+	
+	if not description.is_empty():
+		body.append_array("\r\n--???\r\n".to_utf8_buffer())
+		body.append_array(("Content-Disposition: form-data; name=\"description\"\r\n").to_utf8_buffer())
+		body.append_array(("Content-Type: text/plain" + "\r\n\r\n").to_utf8_buffer())
+		body.append_array(description.to_utf8_buffer())
+	
+	body.append_array("\r\n--???--\r\n".to_utf8_buffer())
+
+	var headers = PackedStringArray(["Authorization: Bearer %s" % self.token.access_token])
+
+	var response = await self._request_raw(endpoint, HTTPClient.METHOD_PUT, headers, body)
+	
+	var attachment = MastodonMediaAttachment.new().from_json(response)
+	
+	return attachment
+
+func _get_mime_type(file_name: String) -> String:
+	var file_extension = file_name.get_extension()
+	var mime_type = ''
+	if file_extension in self.jpegs:
+		mime_type = 'image/jpeg'
+	elif file_extension == 'png':
+		mime_type = 'image/png'
+	elif file_extension == 'webm':
+		mime_type = 'video/webm'
+	elif file_extension == 'mp4':
+		mime_type = 'video/mp4'
+	else:
+		push_error(("Failed to upload file of type %s" % file_extension) + " accepted formats include jpg, png, webm, and mp4")
+	
+	return mime_type
+	
+## POLL ENDPOINTS
+# https://docs.joinmastodon.org/methods/polls/
+
+func get_poll(poll_id: String) -> MastodonPoll:
+	var endpoint = '/api/v1/polls/' + poll_id
+	var headers = PackedStringArray(["Authorization: Bearer %s" % self.token.access_token])
+	
+	var result = await self._request(endpoint, HTTPClient.METHOD_GET, headers)
+	
+	var poll = MastodonPoll.new().from_json(result)
+	return result
+
+func vote_on_poll(poll_id: String, choices: Array[String]) -> MastodonPoll:
+	var endpoint = '/api/v1/polls/' + poll_id + "/votes"
+	var headers = PackedStringArray(["Authorization: Bearer %s" % self.token.access_token])
+	
+	var result = await self._request(endpoint, HTTPClient.METHOD_POST, headers, {'choices[]': choices})
+	
+	var poll = MastodonPoll.new().from_json(result)
+	return result
+
+## SCHEDULED STATUS ENDPOINTS
+func get_scheduled_statuses(max_id: String ='', since_id: String = '', min_id: String = '', limit: int = 20) -> Array[MastodonScheduledStatus]:
+	var endpoint = 'api/v1/scheduled_statuses'
+	var data ={ 'limit': limit }
+	
+	if not max_id.is_empty():
+		data['max_id'] = max_id
+	if not since_id.is_empty():
+		data['since_id'] = since_id
+	if not min_id.is_empty():
+		data['min_id'] = min_id
+
+	var headers = PackedStringArray(["Authorization: Bearer %s" % self.token.access_token])
+
+	var result = await self._request(endpoint, HTTPClient.METHOD_GET, headers, data)
+	
+	var statuses: Array[MastodonScheduledStatus] = []
+	
+	for status in result:
+		statuses.append(MastodonScheduledStatus.new().from_json(status))
+	
+	return statuses
+
+func get_scheduled_status(status_id: String) -> MastodonScheduledStatus:
+	var endpoint = '/api/v1/scheduled_statuses/' + status_id
+	var headers = PackedStringArray(["Authorization: Bearer %s" % self.token.access_token])
+	var result = await self._request(endpoint, HTTPClient.METHOD_GET, headers)
+	
+	var status: MastodonScheduledStatus = MastodonScheduledStatus.new().from_json(result)
+	
+	return status
+
+func update_scheduled_status(status_id: String, scheduled_at: String) -> MastodonScheduledStatus:
+	var endpoint = '/api/v1/scheduled_statuses/' + status_id
+	var headers = PackedStringArray(["Authorization: Bearer %s" % self.token.access_token])
+	var result = await self._request(endpoint, HTTPClient.METHOD_PUT, headers, {'scheduled_at': scheduled_at})
+	
+	var status: MastodonScheduledStatus = MastodonScheduledStatus.new().from_json(result)
+	
+	return status
+
+func cancel_scheduled_status(status_id: String) -> MastodonScheduledStatus:
+	var endpoint = '/api/v1/scheduled_statuses/' + status_id
+	var headers = PackedStringArray(["Authorization: Bearer %s" % self.token.access_token])
+	var result = await self._request(endpoint, HTTPClient.METHOD_DELETE, headers)
+	
+	var status: MastodonScheduledStatus = MastodonScheduledStatus.new().from_json(result)
+	
+	return status
+
+## FOLLOW SUGGESTION ENDPOINTS
+## https://docs.joinmastodon.org/methods/suggestions/
 
 func get_follow_suggestions(limit: int = 40) -> Array[MastodonSuggestion]:
 	var endpoint = '/api/v2/suggestions?limit=' + str(limit)
@@ -788,10 +955,6 @@ func remove_follow_suggestion(account_id: String):
 
 func _request_raw(path: String, method: HTTPClient.Method, headers = [], data: PackedByteArray = PackedByteArray([])):
 	var base_url = "https://" + self.instance_name + path
-	
-#	var query_string = ""
-#	if data.keys().size() > 0:
-#		query_string = HTTPClient.new().query_string_from_dict(data)
 
 	var error = self.auth_client.request_raw(base_url, headers, true, method, data)
 	if error == OK:
