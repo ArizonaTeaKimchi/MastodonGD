@@ -14,6 +14,9 @@ var created_at: String
 var updated_at: String
 
 func from_json(json: Dictionary) -> MastodonRole:
+	if json == null:
+		return
+
 	self.id = json.get('id')
 	self.name = json.get('name')
 	self.color = json.get('color')

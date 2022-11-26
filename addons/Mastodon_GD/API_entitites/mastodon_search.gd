@@ -8,6 +8,9 @@ var statuses: Array[MastodonStatus] = []
 var hashtags: Array[MastodonTag] = []
 
 func from_json(json: Dictionary) -> MastodonSearch:
+	if json == null:
+		return
+
 	if json.get('accounts') != null:
 		for account in json.get('accounts'):
 			self.accounts.append(MastodonAccount.new().from_json(account))

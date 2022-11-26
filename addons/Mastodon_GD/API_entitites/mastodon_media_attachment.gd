@@ -12,7 +12,10 @@ var meta: Dictionary = {}
 var description: String = ''
 var blurhash: String = ''
 
-func from_json(json: Dictionary):
+func from_json(json: Dictionary) -> MastodonMediaAttachment:
+	if json == null:
+		return
+
 	self.id = json.get('id')
 	self.type = json.get('type')
 	self.url = json.get('url')

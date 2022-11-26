@@ -18,7 +18,10 @@ var image
 var embed_url: String
 var blurhash
 
-func from_json(json: Dictionary):
+func from_json(json: Dictionary) -> MastodonPreviewCard:
+	if json == null:
+		return
+
 	self.url = json.get("url")
 	self.title = json.get("title")
 	self.description = json.get("description")

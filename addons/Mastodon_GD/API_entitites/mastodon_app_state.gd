@@ -10,7 +10,10 @@ var website
 @export var client_id: String
 @export var client_secret: String
 
-func from_json(json: Dictionary, is_external: bool = false):
+func from_json(json: Dictionary, is_external: bool = false) -> MastodonAppState:
+	if json == null:
+		return
+
 	self.name = json.get('name')
 	self.website = json.get('website')
 

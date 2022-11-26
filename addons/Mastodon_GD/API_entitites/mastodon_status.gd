@@ -37,6 +37,9 @@ var pinned
 var filtered
 
 func from_json(json: Dictionary) -> MastodonStatus:
+	if json == null:
+		return
+
 	self.id = json.get('id')
 	self.created_at = json.get('created_at')
 	self.in_reply_to_id = json.get('in_reply_to_id')

@@ -15,6 +15,9 @@ var alerts: Dictionary = {
 }
 
 func from_json(json: Dictionary) -> MastodonWebPushSubscription:
+	if json == null:
+		return
+
 	self.id = json.get('id')
 	self.endpoint = json.get('endpoint')
 	self.serverkey = json.get('serverkey')

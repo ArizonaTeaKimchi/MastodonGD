@@ -10,6 +10,9 @@ var url: String = ''
 var static_url: String = ''
 
 func from_json(json: Dictionary) -> MastodonReaction:
+	if json == null:
+		return
+
 	self.name = json.get('name')
 	self.count = json.get('count')
 	if json.get('me') != null:

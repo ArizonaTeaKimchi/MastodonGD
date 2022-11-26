@@ -45,8 +45,8 @@ func Init_Client(instance: String, app_name: String, password: String = '', logi
 ## https://docs.joinmastodon.org/methods/instance/
 
 func get_instance() -> MastodonInstance:
-	var instance_dict = await self._request('/api/v2/instance', HTTPClient.METHOD_GET)
-	return MastodonInstance.new().from_json(instance_dict)
+	var result = await self._request('/api/v2/instance', HTTPClient.METHOD_GET)
+	return MastodonInstance.new().from_json(result)
 
 func get_instance_peers() -> Array[String]:
 	var endpoint = '/api/v1/instance/peers'
@@ -481,13 +481,13 @@ func _get_timeline(timeline_version: String, data: Dictionary = {}) -> MastodonT
 	var timeline = MastodonTimeline.new()
 	return timeline.from_json(instance_dict)
 
-func get_public_timeline(local: bool = false, remote: bool = false, only_media: bool = false, max_id: String = '', since_id: String = '', min_id: String = '', limit: int = 20) -> MastodonTimeline:
-	var data = {
-		'local': local,
-		'remote': remote,
-		'only_media': only_media,
-		'limit': limit
-	}
+func get_public_timeline(data: Dictionary = {
+		'local': false,
+		'remote': false,
+		'only_media': false,
+		'limit': 20
+	},
+	max_id: String = '', since_id: String = '', min_id: String = '') -> MastodonTimeline:
 
 	if not max_id.is_empty():
 		data['max_id'] = max_id
@@ -498,17 +498,22 @@ func get_public_timeline(local: bool = false, remote: bool = false, only_media: 
 
 	return await self._get_timeline('public', data)
 
-func get_local_timeline(remote: bool = false, only_media: bool = false, max_id: String = '', since_id: String = '', min_id: String = '', limit: int = 20) -> MastodonTimeline:
-	return await self.get_public_timeline(true, remote, only_media, max_id, since_id, min_id, limit)
-
-func get_hashtag_timeline(hashtag: String, local: bool = false, only_media: bool = false, max_id: String = '', since_id: String = '', min_id: String = '', limit: int = 20) -> MastodonTimeline:
-	# exclude '#' symbol from hashtag param
-	var data = {
-		'local': local,
-		'only_media': only_media,
-		'limit': limit
-	}
+func get_local_timeline(data: Dictionary = {
+		'local': false,
+		'remote': false,
+		'only_media': false,
+		'limit': 20
+	}, max_id: String = '', since_id: String = '', min_id: String = '') -> MastodonTimeline:
 	
+	data['local'] = true
+	return await self.get_public_timeline(data, max_id, since_id, min_id)
+
+func get_hashtag_timeline(hashtag: String, data: Dictionary = {
+		'local': false,
+		'only_media': false,
+		'limit': 20
+		}, max_id: String = '', since_id: String = '', min_id: String = '') -> MastodonTimeline:
+	# exclude '#' symbol from hashtag param	
 	if not max_id.is_empty():
 		data['max_id'] = max_id
 	if not min_id.is_empty():
@@ -580,26 +585,33 @@ func dismiss_all_notifications():
 ## SEARCH ENDPOINT
 ## https://docs.joinmastodon.org/methods/search/
 
-func search(query: String, type: String = '', resolve: bool = false, following: bool = false, account_id: String = '', exclude_unreviewed: bool = false, max_id: String = '', min_id: String = '', limit: int = 20, offset: int = 0):
+func search(query: String, type: String = '', 
+	data: Dictionary = {
+		'resolve': false,
+		'following': false,
+		'exclude_unreviewed': false,
+		'limit': 20,
+		'offset': 0
+	},
+	id_params: Dictionary = {
+		'account_id': '', 
+		'max_id': '', 
+		'min_id': ''
+	}) -> MastodonSearch:
 	var endpoint = '/api/v2/search'
 	
-	var data = {
-		'q': query,
-		'resolve': resolve,
-		'following': following,
-		'exclude_unreviewed': exclude_unreviewed,
-		'limit': limit,
-		'offset': offset
-	}
+	data['q'] = query
 	
 	if not type.is_empty():
 		data['type'] = type
-	if not max_id.is_empty():
-		data['max_id'] = max_id
-	if not min_id.is_empty():
-		data['min_id'] = min_id
-	if not account_id.is_empty():
-		data['account_id'] = account_id
+
+	if not id_params.is_empty():
+		if not id_params['max_id'].is_empty():
+			data['max_id'] = id_params['max_id']
+		if not id_params['min_id'].is_empty():
+			data['min_id'] = id_params['min_id']
+		if not id_params['account_id'].is_empty():
+			data['account_id'] = id_params['account_id']
 
 	var headers = PackedStringArray(["Authorization: Bearer %s" % self.token.access_token])
 	

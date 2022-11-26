@@ -8,6 +8,9 @@ var severity: String
 var comment: String = ''
 
 func from_json(json: Dictionary) -> MastodonDomainBlock:
+	if json == null:
+		return
+
 	self.domain = json.get('domain')
 	self.digest = json.get('digest')
 	self.severity = json.get('severity')

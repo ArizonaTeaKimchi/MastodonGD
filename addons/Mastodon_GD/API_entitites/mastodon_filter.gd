@@ -12,6 +12,9 @@ var keywords: Array[MastodonFilterKeyword] = []
 var statuses: Array[MastodonFilterStatus] = []
 
 func from_json(json: Dictionary) -> MastodonFilter:
+	if json == null:
+		return
+
 	self.id = json.get('id')
 	self.title = json.get('title')
 	self.context = json.get('context')

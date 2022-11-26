@@ -8,7 +8,10 @@ class_name MastodonToken
 @export var scope: String
 @export var created_at: int
 
-func from_json(json: Dictionary):
+func from_json(json: Dictionary) -> MastodonToken:
+	if json == null:
+		return
+
 	self.access_token = json.get("access_token")
 	self.token_type = json.get("token_type")
 	self.scope = json.get('scope')

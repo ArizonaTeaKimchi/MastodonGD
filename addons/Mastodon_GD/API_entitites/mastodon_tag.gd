@@ -8,7 +8,10 @@ var url: String
 var history: Array[Dictionary] = []
 var following: bool
 
-func from_json(json: Dictionary):
+func from_json(json: Dictionary) -> MastodonTag:
+	if json == null:
+		return
+
 	self.name = json.get('name')
 	self.url = json.get('url')
 	

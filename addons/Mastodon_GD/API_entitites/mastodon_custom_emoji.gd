@@ -10,6 +10,9 @@ var visible_in_picker: bool
 var category
 
 func from_json(json: Dictionary) -> MastodonCustomEmoji:
+	if json == null:
+		return
+
 	self.shortcode = json.get('shortcode') 
 	self.url = json.get('url') 
 	self.static_url = json.get('static_url') 

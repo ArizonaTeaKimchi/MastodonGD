@@ -8,6 +8,9 @@ var accounts: Array[MastodonAccount] = []
 var last_status: MastodonStatus
 
 func from_json(json: Dictionary) -> MastodonConversation:
+	if json == null:
+		return
+
 	self.id = json.get('id')
 	self.unread = json.get('unread')
 	

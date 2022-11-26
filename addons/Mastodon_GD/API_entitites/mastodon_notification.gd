@@ -7,7 +7,10 @@ var type: String
 var created_at: String
 var account: MastodonAccount
 
-func from_json(json: Dictionary):
+func from_json(json: Dictionary) -> MastodonNotification:
+	if json == null:
+		return
+
 	self.id = json.get('id')
 	self.type = json.get('type')
 	self.created_at = json.get('created_at')

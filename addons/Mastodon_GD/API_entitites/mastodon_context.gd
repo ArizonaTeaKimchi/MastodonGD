@@ -7,6 +7,9 @@ var ancestors: Array[MastodonStatus] = []
 var descendants: Array[MastodonStatus] = []
 
 func from_json(json: Dictionary) -> MastodonContext:
+	if json == null:
+		return
+
 	if json.get('ancestors') != null:
 		for status in json.get('ancestors'):
 			self.ancestors.append(MastodonStatus.new().from_json(status))

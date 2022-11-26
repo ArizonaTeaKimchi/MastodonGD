@@ -13,6 +13,9 @@ var media: String
 var spoilers: bool
 
 func from_json(json: Dictionary) -> MastodonPreferences:
+	if json == null:
+		return
+
 	self.visibility = json.get('visibility')
 	self.sensitive = json.get('sensitive')
 	if json.get('language') != null:

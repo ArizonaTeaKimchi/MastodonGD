@@ -13,6 +13,9 @@ var media_attachments: Array[MastodonMediaAttachment] = []
 var emojis: Array[MastodonCustomEmoji] = []
 
 func from_json(json: Dictionary) -> MastodonStatusEdit:
+	if json == null:
+		return
+
 	self.content = json.get('content')
 	self.spoiler_text = json.get('spoiler_text')
 	self.sensitive = json.get('sensitive')

@@ -6,6 +6,9 @@ var updated_at: String
 var content: String
 
 func from_json(json: Dictionary) -> MastodonExtendedDescription:
+	if json == null:
+		return
+
 	self.updated_at = json.get('updated_at')
 	self.content = json.get('content')
 

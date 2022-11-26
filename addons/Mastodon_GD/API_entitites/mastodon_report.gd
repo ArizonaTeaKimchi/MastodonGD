@@ -15,6 +15,9 @@ var rule_ids: Array[String] = []
 var target_account: MastodonAccount
 
 func from_json(json: Dictionary) -> MastodonReport:
+	if json == null:
+		return
+
 	self.id = json.get('id')
 	self.action_taken = json.get('action_taken')
 	self.action_taken_at = json.get('action_taken_at')

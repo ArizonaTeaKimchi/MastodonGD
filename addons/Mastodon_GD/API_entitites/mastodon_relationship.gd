@@ -18,6 +18,9 @@ var endorsed: bool
 var note: String
 
 func from_json(json: Dictionary) -> MastodonRelationship:
+	if json == null:
+		return
+
 	self.id = json.get('id')
 	self.following = json.get('following')
 	self.showing_reblogs = json.get('showing_reblogs')

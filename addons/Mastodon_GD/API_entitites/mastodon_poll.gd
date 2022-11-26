@@ -15,6 +15,9 @@ var voted: bool = false
 var own_votes: Array[int] = []
 
 func from_json(json: Dictionary) -> MastodonPoll:
+	if json == null:
+		return
+
 	self.id = json.get('id')
 	if json.get('expires_at') != null:
 		self.expires_at = json.get('expires_at')
