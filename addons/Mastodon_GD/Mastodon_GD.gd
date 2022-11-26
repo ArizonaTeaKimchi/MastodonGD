@@ -284,22 +284,24 @@ func save_timeline_position(last_read_home_id: String = '', last_read_notificati
 
 ## ACCOUNT ENDPOINTS
 ## https://docs.joinmastodon.org/methods/accounts/
-func get_account_statuses(account_id: String, max_id: String = '', since_id: String = '', min_id: String = '', limit: int = 20, exclude_reblogs: bool = false, tagged: String = '') -> MastodonTimeline:
+func get_account_statuses(account_id: String,
+params: Dictionary = {
+		'max_id': '',
+		'since_id': '',
+		'min_id': '',
+		'tagged': ''
+	}, exclude_reblogs: bool = false, limit: int = 20) -> MastodonTimeline:
+
 	var endpoint = "/statuses"
 	
 	var data = {
 		'limit': limit, 
 		'exclude_reblogs': exclude_reblogs 
 	}
-
-	if not max_id.is_empty():
-		data['max_id'] = max_id
-	if not since_id.is_empty():
-		data['since_id'] = since_id
-	if not min_id.is_empty():
-		data['min_id'] = min_id
-	if not tagged.is_empty():
-		data['tagged'] = tagged
+	
+	for key in params:
+		if not params[key].is_empty():
+			data[key] = params[key]
 
 	var account_statuses_dict = await self._get_account(account_id, endpoint, data)
 	
