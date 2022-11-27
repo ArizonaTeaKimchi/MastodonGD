@@ -7,6 +7,9 @@ var id: String
 var status_id: String
 
 func from_json(json: Dictionary) -> MastodonFilterStatus:
+	if json == null:
+		return
+
 	self.id = json.get('id')
 	self.status_id = json.get('status_id')
 	

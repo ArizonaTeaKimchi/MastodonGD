@@ -10,6 +10,9 @@ var status_count: int
 var last_status_at: String = ''
 
 func from_json(json: Dictionary) -> MastodonFeaturedTag:
+	if json == null:
+		return
+
 	self.id = json.get('id')
 	self.name = json.get('name')
 	self.url = json.get('url')

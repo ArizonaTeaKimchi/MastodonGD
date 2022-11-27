@@ -37,6 +37,9 @@ var pinned
 var filtered
 
 func from_json(json: Dictionary) -> MastodonStatus:
+	if json == null:
+		return
+
 	self.id = json.get('id')
 	self.created_at = json.get('created_at')
 	self.in_reply_to_id = json.get('in_reply_to_id')
@@ -67,7 +70,9 @@ func from_json(json: Dictionary) -> MastodonStatus:
 		self.emojis.append(MastodonCustomEmoji.new().from_json(emoji))
 
 	self.card = MastodonPreviewCard.new().from_json(json.get('card')) if json.get('card') != null else null
-	self.poll = json.get('poll')
+	
+	if json.get('poll') != null:
+		self.poll = MastodonPoll.new().from_json(json.get('poll'))
 
 	self.account = MastodonAccount.new()
 	self.account.from_json(json.get('account'))

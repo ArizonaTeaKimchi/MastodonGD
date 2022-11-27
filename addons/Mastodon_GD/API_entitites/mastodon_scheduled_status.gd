@@ -9,6 +9,9 @@ var params: Dictionary
 var media_attachments: Array[MastodonMediaAttachment] = []
 
 func from_json(json: Dictionary) -> MastodonScheduledStatus:
+	if json == null:
+		return
+
 	self.id = json.get('id')
 	self.scheduled_at = json.get('scheduled_at')
 	self.params = json.get('params')

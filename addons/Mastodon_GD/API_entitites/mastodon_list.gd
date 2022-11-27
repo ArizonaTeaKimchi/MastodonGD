@@ -8,6 +8,9 @@ var title: String
 var replies_policy: String
 
 func from_json(json: Dictionary) -> MastodonList:
+	if json == null:
+		return
+
 	self.id = json.get('id')
 	self.title = json.get('title')
 	self.replies_policy = json.get('replies_policy')

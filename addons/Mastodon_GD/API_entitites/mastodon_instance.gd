@@ -16,7 +16,10 @@ var registrations: Dictionary
 var contact: Dictionary
 var rules: Array[MastodonRule] = []
 
-func from_json(json: Dictionary):
+func from_json(json: Dictionary) -> MastodonInstance:
+	if json == null:
+		return
+
 	self.domain = json.get('domain')
 	self.title = json.get('title')
 	self.version = json.get('version')

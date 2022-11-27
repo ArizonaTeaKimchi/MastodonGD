@@ -6,6 +6,9 @@ var id: String
 var accounts: Array[MastodonAccount] = []
 
 func from_json(json: Dictionary) -> MastodonFamiliarFollower:
+	if json == null:
+		return
+
 	self.id = json.get('id')
 	
 	if json.get('accounts') != null:

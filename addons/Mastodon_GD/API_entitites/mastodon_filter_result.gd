@@ -8,6 +8,9 @@ var keyword_matches: Array[String] = []
 var status_matches: String = ''
 
 func from_json(json: Dictionary) -> MastodonFilterResult:
+	if json == null:
+		return
+
 	if json.get('filter') != null:
 		self.filter = MastodonFilter.new().from_json(json.get('filter'))
 	if json.get('keyword_matches') != null:

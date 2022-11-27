@@ -18,6 +18,9 @@ var emojis: Array[MastodonCustomEmoji] = []
 var reactions: Array[MastodonReaction] = []
 
 func from_json(json: Dictionary) -> MastodonAnnouncement:
+	if json == null:
+		return
+
 	self.id = json.get('id')
 	self.content = json.get('content')
 	self.starts_at = json.get('starts_at')

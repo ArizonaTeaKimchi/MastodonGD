@@ -23,7 +23,10 @@ var last_status_at
 var emojis: Array[MastodonCustomEmoji] = []
 var fields: Array[Dictionary]
 
-func from_json(json: Dictionary):
+func from_json(json: Dictionary) -> MastodonAccount:
+	if json == null:
+		return
+
 	self.id = json.get("id")
 
 	self.username = json.get("username")
