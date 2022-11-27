@@ -57,7 +57,7 @@ func get_account_statuses(account_id: String) -> MastodonAccount:
 
 ## Contributors
 
-MastodonGD is made by [AZTeaKimchi](https://mastodon.gamedev.place/@AZTeaKimchi), if you would like to contribute feel free!
+MastodonGD is made by [AZTeaKimchi](https://mastodon.gamedev.place/@AZTeaKimchi), if you would like to contribute or make a feature request feel free!
 
 ## License
 
