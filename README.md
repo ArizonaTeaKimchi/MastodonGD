@@ -30,15 +30,18 @@ func _ready():
 	await self.mastodon_client.Init_Client(instance_name, application_name, client_side_encryption_key)
 ```
 
-The `MastodonClient` class currently supports a handful of Mastodon api operations such as
+The `MastodonClient` class currently supports nearly all Mastodon api endpoint operations such as
 - Get the user's public, home, and local timelines
 - Get statuses of a specific account
 - Read, favourite, boost, and bookmark statuses
-- Post a new status with
-   - a single image file with description (multiple files/file type support in development)
+- Post or schedule a new status/reply with
+   - Multi-media attachments
    - Adding status spoilers and spoiler text
+   - Custom visiblity (public, direct, etc)
 
-Additional api features exist in `MastodonClient` but need to be tested
+and more! All non-admin methods described in the [Mastodon API Documentation](https://docs.joinmastodon.org/methods/) should be available from the `MastodonClient` class.
+
+If one is missing, or isn't working as expected, please report an issue, or submit a pull request!
 
 ``` GDScript
 
