@@ -631,7 +631,7 @@ func search(query: String, type: String = '',
 #
 # OPTIONAL
 # in_reply_to_id: String
-# visiblity: String (public/unlisted/private/direct)
+# visibility: String (public/unlisted/private/direct)
 # sensitive: bool
 # spoiler_text: String
 # scheduled_at: String (ISO 8601 Datetime) 
